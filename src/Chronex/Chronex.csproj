@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Chronex</PackageId>
+    <Description>Extended cron expressions for .NET. Parse, validate, trigger — your app handles the rest.</Description>
+    <PackageTags>cron;scheduler;trigger;expression;timezone;interval</PackageTags>
+    <RootNamespace>Chronex</RootNamespace>
+    <AssemblyName>Chronex</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Chronex.Tests" />
+  </ItemGroup>
+
+</Project>
