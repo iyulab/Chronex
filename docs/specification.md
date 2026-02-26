@@ -1,22 +1,22 @@
 # Chronex Expression Specification v1.0
 
-## 1. 개요
+## 1. Overview
 
-Chronex Expression은 표준 Unix cron 표현식의 **상위호환(superset)**이다.
-기존 cron 표현식은 수정 없이 그대로 동작하며, 선택적 확장을 통해
-타임존, 인터벌, 원샷(절대/상대), 지터, 스태거, 윈도우, 만료, 시작일, 최대 실행 횟수를 단일 문자열로 표현한다.
+A Chronex Expression is a **superset** of the standard Unix cron expression.
+Existing cron expressions work unchanged. Additive extensions enable
+timezone, interval, one-shot (absolute/relative), jitter, stagger, window, expiry, start date, and max execution count — all in a single string.
 
-### 설계 원칙
+### Design Principles
 
-1. **표준 호환**: 유효한 5필드/6필드 cron 표현식은 그대로 유효한 Chronex 표현식이다
-2. **단일 문자열 완결**: 하나의 string으로 스케줄의 모든 조건을 표현한다
-3. **결정론적 해석**: 동일한 표현식 + 동일한 기준 시각 → 항상 동일한 다음 실행 시각
-4. **파서 분리 가능**: 확장 옵션은 `{}` 블록으로 분리되어 파서가 깔끔하게 처리 가능
-5. **라운드트립 가능**: `Parse(expr).ToString()` → 원본과 의미적으로 동일한 문자열 복원
+1. **Standard-compatible**: Any valid 5-field or 6-field cron expression is a valid Chronex expression.
+2. **String-complete**: A single string fully describes every scheduling condition.
+3. **Deterministic**: Same expression + same reference time → always the same next occurrence.
+4. **Parser-friendly**: Extension options live in a `{}` block, cleanly separated from the schedule body.
+5. **Round-trippable**: `Parse(expr).ToString()` produces a semantically equivalent string.
 
 ---
 
-## 2. 정규 문법 (EBNF)
+## 2. Formal Grammar (EBNF)
 
 ```ebnf
 (* ===== Top-Level ===== *)
@@ -31,14 +31,14 @@ timezone_prefix
 
 iana_timezone
     = identifier , { "/" , identifier } ;
-    (* 예: "Asia/Seoul", "America/New_York", "UTC" *)
+    (* e.g. "Asia/Seoul", "America/New_York", "UTC" *)
 
 (* ===== Schedule Body ===== *)
-(* 상호 배타적: cron, alias, interval, once 중 정확히 하나 *)
+(* Mutually exclusive: exactly one of cron, alias, interval, once *)
 
 schedule_body
-    = cron_expression          (* 표준 cron *)
-    | alias_expression         (* @daily, @hourly 등 *)
+    = cron_expression          (* standard cron *)
+    | alias_expression         (* @daily, @hourly, etc. *)
     | interval_expression      (* @every 30m *)
     | once_expression ;        (* @once 2025-03-01T09:00:00+09:00 *)
 
@@ -85,15 +85,15 @@ cron_element
 cron_value
     = integer ;
 
-(* Day-of-Month: 추가로 L, W 지원 *)
+(* Day-of-Month: additionally supports L, W *)
 dom_cron_field
     = cron_field
-    | "L"                     (* 말일 *)
-    | "LW"                    (* 말일에 가장 가까운 평일 *)
-    | "L-" , positive_integer (* 말일에서 N일 전 *)
-    | integer , "W" ;         (* N일에 가장 가까운 평일 *)
+    | "L"                     (* last day of month *)
+    | "LW"                    (* nearest weekday to the last day *)
+    | "L-" , positive_integer (* N days before the last day *)
+    | integer , "W" ;         (* nearest weekday to the Nth day *)
 
-(* Month: 숫자 또는 이름 *)
+(* Month: numeric or name *)
 month_cron_field
     = cron_field
     | month_name_list ;
@@ -108,12 +108,12 @@ month_name
     = "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN"
     | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC" ;
 
-(* Day-of-Week: 숫자/이름 + L/# 지원 *)
+(* Day-of-Week: numeric/name + L/# support *)
 dow_cron_field
     = cron_field
     | dow_name_list
-    | dow_name , "L"              (* 해당 요일의 마지막 주 *)
-    | dow_name , "#" , digit ;    (* 해당 요일의 N번째 주 *)
+    | dow_name , "L"              (* last occurrence of that weekday in the month *)
+    | dow_name , "#" , digit ;    (* Nth occurrence of that weekday in the month *)
 
 dow_name_list
     = dow_name_element , { "," , dow_name_element } ;
@@ -138,16 +138,16 @@ alias_expression
 interval_expression
     = "@every" , whitespace , duration
     | "@every" , whitespace , duration , "-" , duration ;
-    (* "@every 30m"      → 고정 30분 간격 *)
-    (* "@every 1h-2h"    → 1~2시간 랜덤 간격 *)
+    (* "@every 30m"      → fixed 30-minute interval *)
+    (* "@every 1h-2h"    → random interval between 1 and 2 hours *)
 
 (* ----- Once ----- *)
 
 once_expression
     = "@once" , whitespace , iso8601_datetime
     | "@once" , whitespace , relative_duration ;
-    (* "@once 2025-03-01T09:00:00+09:00" — 절대 시각 *)
-    (* "@once +20m" — 기준 시각으로부터 상대 시간 *)
+    (* "@once 2025-03-01T09:00:00+09:00" — absolute time *)
+    (* "@once +20m" — relative to reference time *)
 
 relative_duration
     = "+" , duration ;
@@ -166,13 +166,13 @@ option
     = whitespace_opt , option_key , ":" , whitespace_opt , option_value , whitespace_opt ;
 
 option_key
-    = "jitter"       (* 비결정론적 랜덤 지연: duration *)
-    | "stagger"      (* 결정론적 고정 오프셋: duration — 동시 실행 분산 *)
-    | "window"       (* 실행 윈도우: duration *)
-    | "from"         (* 시작일: ISO 8601 date 또는 datetime *)
-    | "until"        (* 만료일: ISO 8601 date 또는 datetime *)
-    | "max"          (* 최대 실행 횟수: positive integer *)
-    | "tag" ;        (* 태그: 임의 문자열, 쉼표 구분은 +로 연결 *)
+    = "jitter"       (* non-deterministic random delay: duration *)
+    | "stagger"      (* deterministic fixed offset: duration — collision avoidance *)
+    | "window"       (* execution window: duration *)
+    | "from"         (* start date: ISO 8601 date or datetime *)
+    | "until"        (* expiry date: ISO 8601 date or datetime *)
+    | "max"          (* max execution count: positive integer *)
+    | "tag" ;        (* tag: arbitrary string, multiple values joined with + *)
 
 option_value
     = duration                (* jitter, window *)
@@ -183,21 +183,21 @@ option_value
 
 tag_value
     = identifier , { "+" , identifier } ;
-    (* 예: "report+daily" → ["report", "daily"] *)
+    (* e.g. "report+daily" → ["report", "daily"] *)
 
 
 (* ===== Primitives ===== *)
 
 duration
     = positive_integer , duration_unit , { positive_integer , duration_unit } ;
-    (* 복합 duration: "1h30m", "2h", "30s", "500ms" *)
+    (* compound duration: "1h30m", "2h", "30s", "500ms" *)
 
 duration_unit
-    = "ms"      (* 밀리초 *)
-    | "s"       (* 초 *)
-    | "m"       (* 분 *)
-    | "h"       (* 시 *)
-    | "d" ;     (* 일 *)
+    = "ms"      (* milliseconds *)
+    | "s"       (* seconds *)
+    | "m"       (* minutes *)
+    | "h"       (* hours *)
+    | "d" ;     (* days *)
 
 iso8601_datetime
     = date_part , "T" , time_part , [ timezone_offset ] ;
@@ -234,225 +234,239 @@ letter           = "A"-"Z" | "a"-"z" ;
 
 ---
 
-## 3. 의미론 (Semantics)
+## 3. Semantics
 
-### 3.1 5필드 vs 6필드 판별
+### 3.1 5-Field vs 6-Field Detection
 
-파서는 공백으로 분리된 필드 수로 5필드(분~요일)와 6필드(초~요일)를 구분한다.
-Options block `{...}`이 있는 경우, 그 앞까지의 필드만 카운트한다.
+The parser determines 5-field (minute–dow) vs 6-field (second–dow) by counting whitespace-separated fields.
+If an options block `{...}` is present, only fields before it are counted.
 
-| 필드 수 | 해석 |
-|---------|------|
+| Field count | Interpretation |
+|-------------|----------------|
 | 5 | `minute hour dom month dow` |
 | 6 | `second minute hour dom month dow` |
 
-5필드 표현식의 초(second)는 암묵적으로 `0`이다.
+The second field of a 5-field expression is implicitly `0`.
 
-### 3.2 값 범위
+### 3.2 Value Ranges
 
-| 필드 | 범위 | 특수 문자 |
-|------|------|-----------|
-| second | 0-59 | `*` `,` `-` `/` |
-| minute | 0-59 | `*` `,` `-` `/` |
-| hour | 0-23 | `*` `,` `-` `/` |
-| day of month | 1-31 | `*` `,` `-` `/` `L` `W` |
-| month | 1-12 또는 JAN-DEC | `*` `,` `-` `/` |
-| day of week | 0-7 (0,7=SUN) 또는 SUN-SAT | `*` `,` `-` `/` `L` `#` |
+| Field | Range | Special characters |
+|-------|-------|--------------------|
+| second | 0–59 | `*` `,` `-` `/` |
+| minute | 0–59 | `*` `,` `-` `/` |
+| hour | 0–23 | `*` `,` `-` `/` |
+| day of month | 1–31 | `*` `,` `-` `/` `L` `W` |
+| month | 1–12 or JAN–DEC | `*` `,` `-` `/` |
+| day of week | 0–7 (0,7=SUN) or SUN–SAT | `*` `,` `-` `/` `L` `#` |
 
-### 3.3 역순 범위 (Reversed Range)
+### 3.3 Reversed Ranges
 
-`23-01`은 `23,00,01`과 동일하다. `FRI-MON`은 `FRI,SAT,SUN,MON`과 동일하다.
-이를 통해 자정을 넘나드는 시간 범위나 주말을 포함한 요일 범위를 자연스럽게 표현한다.
+`23-01` is equivalent to `23,00,01`. `FRI-MON` is equivalent to `FRI,SAT,SUN,MON`.
+This allows natural expression of ranges that cross midnight or wrap around the week.
+
+### 3.3.1 DOM/DOW Combined Semantics (Vixie Cron OR Rule)
+
+When both the day-of-month (DOM) and day-of-week (DOW) fields are non-wildcard (not `*`),
+the **OR** semantic is applied per the Vixie Cron standard:
+
+| DOM | DOW | Matching rule |
+|-----|-----|---------------|
+| `*` | `*` | Every day |
+| `*` | non-wildcard | Check DOW only |
+| non-wildcard | `*` | Check DOM only |
+| non-wildcard | non-wildcard | Fire if DOM **or** DOW matches |
+
+Example: `0 0 1,15 * FRI` → fires on the 1st, 15th, **and** every Friday of each month (OR, not AND).
 
 ### 3.4 Timezone (`TZ=`)
 
-`TZ=` 접두사가 있으면 해당 IANA 타임존에서 표현식을 해석한다.
-`TZ=` 접두사가 없으면 호출자가 제공하는 타임존 (또는 UTC)에서 해석한다.
+When a `TZ=` prefix is present, the expression is interpreted in the specified IANA timezone.
+When absent, the expression is interpreted in the timezone provided by the caller (or UTC by default).
 
-표현식 내 타임존은 다음 실행 시각 계산, DST 전환 처리, 결과 시각의 오프셋 결정에 모두 영향을 미친다.
+The expression-level timezone affects next-occurrence calculation, DST transition handling, and the offset of result times.
 
-### 3.5 DST 처리 규칙
+### 3.5 DST Handling Rules
 
-Vixie Cron의 의미론을 따른다:
+Follows Vixie Cron semantics:
 
-**Spring Forward (시계가 앞으로):**
-- 무효한 시간에 매핑되는 non-interval 표현식 → 다음 유효 시간으로 조정
-- interval 표현식 → occurrence를 건너뛰지 않음 (조정된 시간에 실행)
+**Spring Forward (clock moves ahead):**
+- Non-interval expressions that map to an invalid time → adjusted to the next valid time.
+- Interval expressions → no occurrences are skipped (fire at the adjusted time).
 
-**Fall Back (시계가 뒤로):**
-- non-interval 표현식 → 첫 번째 occurrence만 실행 (중복 방지)
-- interval 표현식 → 양쪽 모두 실행 (건너뛰지 않음)
+**Fall Back (clock moves back):**
+- Non-interval expressions → only the first occurrence fires (prevents duplicates).
+- Interval expressions → both occurrences fire (no skipping).
 
-**Non-interval 표현식의 정의:** second, minute, hour 필드 중 어떤 것도 `*`, 범위, 또는 step을 포함하지 않는 표현식.
-예: `0 30 1 * * *` (non-interval), `*/5 * * * *` (interval)
+**Definition of non-interval expressions:** Expressions where none of the second, minute, or hour fields contain `*`, a range, or a step.
+Example: `0 30 1 * * *` (non-interval), `*/5 * * * *` (interval).
 
 ### 3.6 `@every` (Interval)
 
-`@every <duration>`은 고정 간격 실행이다. Cron과 달리 calendar-aligned가 아니다.
-- 첫 실행은 스케줄러 시작 시점 + duration 이후
-- 이후 실행은 이전 **스케줄된 시각**(실제 실행 시각 아님) + duration
+`@every <duration>` is a fixed-interval schedule. Unlike cron, it is not calendar-aligned.
+- The first occurrence is at scheduler start time + duration.
+- Subsequent occurrences are at the previous **scheduled time** (not actual execution time) + duration.
 
-`@every <min>-<max>`는 각 간격이 min~max 사이의 균등분포 랜덤 값이다.
-jitter와 달리, 간격 자체가 매번 달라진다.
+`@every <min>-<max>` picks a uniformly random interval between min and max for each cycle.
+Unlike jitter, the interval itself varies each time.
 
 ### 3.7 `@once` (One-shot)
 
-`@once`는 정확히 1회 실행되는 스케줄이다. 두 가지 형식을 지원한다:
+`@once` fires exactly once. Two forms are supported:
 
-**절대 시각:** `@once <iso8601>` — 지정된 시각에 실행된다.
-지정된 시각이 이미 과거이면 `GetNextOccurrence()`는 `null`을 반환한다.
+**Absolute time:** `@once <iso8601>` — fires at the specified instant.
+If the specified time is already in the past, `GetNextOccurrence()` returns `null`.
 
-**상대 시간:** `@once +<duration>` — 기준 시각(reference time)으로부터 duration 이후에 실행된다.
+**Relative time:** `@once +<duration>` — fires at the reference time plus the given duration.
 
 ```
-@once +20m         → 기준 시각 + 20분
-@once +1h30m       → 기준 시각 + 1시간 30분
-@once +2h          → 기준 시각 + 2시간
+@once +20m         → reference time + 20 minutes
+@once +1h30m       → reference time + 1 hour 30 minutes
+@once +2h          → reference time + 2 hours
 ```
 
-상대 시간은 파싱 시점에 절대 시각으로 변환된다. 결정론성을 유지하기 위해 `Parse`에 기준 시각을 명시해야 한다:
+Relative durations are resolved to absolute times at parse time. For determinism, pass an explicit reference time to `Parse`:
 
 ```csharp
-// 기준 시각 명시 — 결정론적
+// Explicit reference time — deterministic
 var expr = ChronexExpression.Parse("@once +20m", referenceTime: DateTimeOffset.UtcNow);
-expr.OnceAt  // → referenceTime + 20분의 절대 시각
+expr.OnceAt  // → referenceTime + 20 minutes as an absolute instant
 
-// 기준 시각 생략 — Parse 호출 시점의 UTC Now가 기준
+// No reference time — uses UTC Now at the moment of Parse call
 var expr = ChronexExpression.Parse("@once +20m");
 ```
 
-변환 후에는 절대 시각 `@once`와 동일하게 동작한다. `ToString()`은 변환된 절대 시각을 반환한다.
+After resolution, it behaves identically to an absolute `@once`. `ToString()` returns the resolved absolute time.
 
 ### 3.8 Options Block `{...}`
 
-Options block은 schedule body 뒤에 공백으로 분리되어 나타난다.
-`{}`로 감싸고, 쉼표로 구분된 key:value 쌍들을 포함한다.
+The options block appears after the schedule body, separated by whitespace.
+It is enclosed in `{}` and contains comma-separated key:value pairs.
 
-| 옵션 | 타입 | 의미 | 기본값 |
-|------|------|------|--------|
-| `jitter` | duration | 각 실행에 `[0, jitter)` 범위의 랜덤 지연을 추가 (비결정론적) | 없음 (0) |
-| `stagger` | duration | 트리거 ID 기반의 고정 오프셋 `[0, stagger)` (결정론적) | 없음 (0) |
-| `window` | duration | 스케줄된 시각부터 window 시간 내에만 실행 허용. window를 넘기면 skip. | 무제한 |
-| `from` | date/datetime | 이 시각 이전의 occurrence는 무시 | 없음 |
-| `until` | date/datetime | 이 시각 이후의 occurrence는 무시 | 없음 |
-| `max` | integer | 총 실행 횟수 제한. max 도달 후 occurrence 없음 | 무제한 |
-| `tag` | string | 메타데이터 태그. 실행 로직에 영향 없음. 복수는 `+`로 연결 | 없음 |
+| Option | Type | Meaning | Default |
+|--------|------|---------|---------|
+| `jitter` | duration | Adds a random delay in `[0, jitter)` to each execution (non-deterministic) | none (0) |
+| `stagger` | duration | Fixed offset in `[0, stagger)` based on trigger ID (deterministic) | none (0) |
+| `window` | duration | Execution is allowed only within the window after the scheduled time. Skipped if exceeded. | unlimited |
+| `from` | date/datetime | Occurrences before this time are ignored | none |
+| `until` | date/datetime | Occurrences after this time are ignored | none |
+| `max` | integer | Total execution count limit. No more occurrences after reaching max. | unlimited |
+| `tag` | string | Metadata tag. No effect on execution logic. Multiple tags joined with `+`. | none |
 
-**`from`/`until`이 date only인 경우:**
-- `from:2025-06-01` → `2025-06-01T00:00:00` (해당 타임존의 자정)
-- `until:2025-12-31` → `2025-12-31T23:59:59.999` (해당 타임존의 마지막 순간)
+**`from`/`until` with date-only values:**
+- `from:2025-06-01` → `2025-06-01T00:00:00` (midnight in the applicable timezone)
+- `until:2025-12-31` → `2025-12-31T23:59:59.999` (last moment of the day in the applicable timezone)
 
-**`jitter`와 `stagger`의 차이:**
+**Difference between `jitter` and `stagger`:**
 
 | | `jitter` | `stagger` |
 |-|----------|-----------|
-| 성격 | 비결정론적 (매 실행 랜덤) | 결정론적 (등록 시 고정) |
-| 오프셋 계산 | 실행마다 `[0, jitter)` 범위의 새 랜덤 값 | `hash(triggerId) % stagger` 고정 값 |
-| 용도 | 부하 분산 (외부 API 호출 등) | 동시 실행 충돌 방지 (top-of-hour 문제) |
-| 예측 가능성 | 불가 | 트리거 ID가 같으면 항상 동일한 오프셋 |
+| Nature | Non-deterministic (random each execution) | Deterministic (fixed at registration) |
+| Offset calculation | New random value in `[0, jitter)` each time | `hash(triggerId) % stagger` — constant |
+| Use case | Load spreading (e.g. external API calls) | Collision avoidance (e.g. top-of-hour stampedes) |
+| Predictability | Unpredictable | Same trigger ID always yields the same offset |
 
-두 옵션을 함께 사용할 수 있다. 적용 순서: `scheduled_time + stagger_offset + jitter_random`.
+Both options can be used together. Application order: `scheduled_time + stagger_offset + jitter_random`.
 
-**`jitter`/`stagger`와 `window`의 관계:**
-jitter + stagger가 적용된 후의 시각이 window를 초과하면 해당 occurrence는 skip된다.
+**Interaction of `jitter`/`stagger` with `window`:**
+If the time after applying jitter + stagger exceeds the window, the occurrence is skipped.
 
-**`max`의 카운팅:**
-skip된 occurrence는 카운트하지 않는다. 실제 실행(또는 실행 시도)된 횟수만 카운트한다.
+**`max` counting:**
+Skipped occurrences are not counted. Only actually executed (or attempted) invocations count toward max.
 
-### 3.9 Alias 확장
+### 3.9 Alias Expansion
 
-| Alias | 동등한 Cron |
-|-------|------------|
+| Alias | Equivalent cron |
+|-------|-----------------|
 | `@yearly`, `@annually` | `0 0 1 1 *` |
 | `@monthly` | `0 0 1 * *` |
 | `@weekly` | `0 0 * * 0` |
 | `@daily`, `@midnight` | `0 0 * * *` |
 | `@hourly` | `0 * * * *` |
 
-Alias에도 TZ 접두사와 options block을 붙일 수 있다:
+Aliases can be combined with a TZ prefix and options block:
 `TZ=Asia/Seoul @daily {jitter:5m}`
 
 ---
 
-## 4. 표현식 예시
+## 4. Expression Examples
 
-### 기본 (표준 cron 호환)
-
-```
-*/5 * * * *                              # 매 5분
-0 9 * * MON-FRI                          # 평일 09:00
-0 0 1 * *                                # 매월 1일 자정
-30 4 1,15 * *                            # 매월 1, 15일 04:30
-0 22 * * 1-5                             # 평일 22:00
-```
-
-### 6필드 (초 포함)
+### Basic (standard cron compatible)
 
 ```
-0 */5 * * * *                            # 매 5분 0초
-30 0 * * * *                             # 매 시간 0분 30초
-*/10 * * * * *                           # 매 10초
+*/5 * * * *                              # every 5 minutes
+0 9 * * MON-FRI                          # weekdays at 09:00
+0 0 1 * *                                # first day of each month at midnight
+30 4 1,15 * *                            # 1st and 15th of each month at 04:30
+0 22 * * 1-5                             # weekdays at 22:00
 ```
 
-### 타임존
+### 6-field (with seconds)
 
 ```
-TZ=Asia/Seoul 0 9 * * *                  # 서울 시간 매일 09:00
-TZ=America/New_York 0 17 * * MON-FRI     # 뉴욕 시간 평일 17:00
-TZ=UTC 0 0 * * *                         # UTC 자정
+0 */5 * * * *                            # every 5 minutes at 0 seconds
+30 0 * * * *                             # every hour at 0 minutes 30 seconds
+*/10 * * * * *                           # every 10 seconds
 ```
 
-### 확장 문자
+### Timezone
 
 ```
-0 0 L * *                                # 매월 말일 자정
-0 0 LW * *                               # 매월 말일에 가장 가까운 평일
-0 0 L-3 * *                              # 매월 말일에서 3일 전
-0 0 15W * *                              # 매월 15일에 가장 가까운 평일
-0 0 * * 5L                               # 매월 마지막 금요일
-0 0 * * MON#2                            # 매월 두 번째 월요일
+TZ=Asia/Seoul 0 9 * * *                  # daily at 09:00 Seoul time
+TZ=America/New_York 0 17 * * MON-FRI     # weekdays at 17:00 New York time
+TZ=UTC 0 0 * * *                         # midnight UTC
+```
+
+### Extended characters
+
+```
+0 0 L * *                                # last day of each month at midnight
+0 0 LW * *                               # nearest weekday to the last day of month
+0 0 L-3 * *                              # 3 days before the last day of month
+0 0 15W * *                              # nearest weekday to the 15th
+0 0 * * 5L                               # last Friday of each month
+0 0 * * MON#2                            # second Monday of each month
 ```
 
 ### Interval
 
 ```
-@every 30m                               # 30분마다
-@every 2h                                # 2시간마다
-@every 1h30m                             # 1시간 30분마다
-@every 45s                               # 45초마다
-@every 1h-2h                             # 1~2시간 랜덤 간격
+@every 30m                               # every 30 minutes
+@every 2h                                # every 2 hours
+@every 1h30m                             # every 1 hour 30 minutes
+@every 45s                               # every 45 seconds
+@every 1h-2h                             # random interval between 1 and 2 hours
 ```
 
 ### One-shot
 
 ```
-@once 2025-03-01T09:00:00+09:00          # 특정 시각 1회 (절대)
-@once 2025-12-31T23:59:59Z               # UTC 기준 (절대)
-@once +20m                               # 20분 후 (상대)
-@once +1h30m                             # 1시간 30분 후 (상대)
+@once 2025-03-01T09:00:00+09:00          # specific time, once (absolute)
+@once 2025-12-31T23:59:59Z               # UTC-based (absolute)
+@once +20m                               # 20 minutes from now (relative)
+@once +1h30m                             # 1 hour 30 minutes from now (relative)
 ```
 
 ### Alias
 
 ```
-@daily                                   # 매일 자정
-@hourly                                  # 매시 정각
-@weekly                                  # 매주 일요일 자정
+@daily                                   # daily at midnight
+@hourly                                  # every hour on the hour
+@weekly                                  # every Sunday at midnight
 ```
 
 ### Options
 
 ```
-0 9 * * * {jitter:30s}                   # 매일 09:00 + 0~30초 랜덤 (비결정론적)
-0 * * * * {stagger:5m}                   # 매시 정각 + 고정 오프셋 0~5분 (결정론적)
-0 9 * * * {stagger:3m, jitter:10s}       # stagger + jitter 함께 사용
-0 9 * * * {window:15m}                   # 09:00~09:15 안에만 실행
-*/10 * * * * {until:2025-12-31}          # 2025년 말까지만
-@every 1h {max:10}                       # 최대 10회
-@every 5m {from:2025-06-01, until:2025-12-31}  # 기간 한정
+0 9 * * * {jitter:30s}                   # daily at 09:00 + random 0–30s (non-deterministic)
+0 * * * * {stagger:5m}                   # every hour + fixed offset 0–5m (deterministic)
+0 9 * * * {stagger:3m, jitter:10s}       # stagger + jitter combined
+0 9 * * * {window:15m}                   # execute only within 09:00–09:15
+*/10 * * * * {until:2025-12-31}          # until end of 2025
+@every 1h {max:10}                       # max 10 executions
+@every 5m {from:2025-06-01, until:2025-12-31}  # bounded time range
 ```
 
-### 복합
+### Combined
 
 ```
 TZ=Asia/Seoul 0 9 * * MON-FRI {jitter:30s, until:2025-12-31}
@@ -465,14 +479,14 @@ TZ=America/Chicago 0 0 L * * {jitter:1m, tag:monthly+report}
 
 ---
 
-## 5. 검증 규칙
+## 5. Validation Rules
 
-파서는 다음 규칙을 적용하고, 위반 시 구조화된 에러 목록을 반환한다.
+The parser applies the following rules and returns a structured list of errors on violation.
 
-### 5.1 필드 범위 검증
+### 5.1 Field Range Validation
 
-| 규칙 ID | 검증 | 에러 메시지 |
-|---------|------|-----------|
+| Rule ID | Validation | Error message |
+|---------|------------|---------------|
 | `E001` | second ∈ [0, 59] | `second: value {v} out of range [0, 59]` |
 | `E002` | minute ∈ [0, 59] | `minute: value {v} out of range [0, 59]` |
 | `E003` | hour ∈ [0, 23] | `hour: value {v} out of range [0, 23]` |
@@ -481,31 +495,44 @@ TZ=America/Chicago 0 0 L * * {jitter:1m, tag:monthly+report}
 | `E006` | day of week ∈ [0, 7] | `dayOfWeek: value {v} out of range [0, 7]` |
 | `E007` | step > 0 | `{field}: step must be positive, got {v}` |
 
-### 5.2 구조 검증
+### 5.2 Structural Validation
 
-| 규칙 ID | 검증 | 에러 메시지 |
-|---------|------|-----------|
-| `E010` | 필드 수가 5 또는 6 (cron) | `expected 5 or 6 fields, got {n}` |
-| `E011` | TZ가 유효한 IANA timezone | `timezone: unknown timezone '{tz}'` |
-| `E012` | @once datetime이 유효한 ISO 8601 | `once: invalid datetime format '{v}'` |
-| `E013` | @every duration이 양수 | `every: duration must be positive` |
-| `E014` | @every range에서 min < max | `every: min duration must be less than max` |
-| `E015` | 알 수 없는 option key | `options: unknown option '{key}'` |
-| `E016` | option value 타입 불일치 | `options.{key}: expected {type}, got '{v}'` |
-| `E017` | @once 상대 시간의 duration이 양수 | `once: relative duration must be positive` |
+| Rule ID | Validation | Error message |
+|---------|------------|---------------|
+| `E010` | Field count is 5 or 6 (cron) | `expected 5 or 6 fields, got {n}` |
+| `E011` | TZ is a valid IANA timezone | `timezone: unknown timezone '{tz}'` |
+| `E012` | @once datetime is valid ISO 8601 | `once: invalid datetime format '{v}'` |
+| `E013` | @every duration is positive | `every: duration must be positive` |
+| `E014` | @every range: min < max | `every: min duration must be less than max` |
+| `E015` | Unknown option key | `options: unknown option '{key}'` |
+| `E016` | Option value type mismatch | `options.{key}: expected {type}, got '{v}'` |
+| `E017` | @once relative duration is positive | `once: relative duration must be positive` |
 
-### 5.3 논리 검증
+### 5.3 Logical Validation
 
-| 규칙 ID | 검증 | 에러 메시지 |
-|---------|------|-----------|
+| Rule ID | Validation | Error message |
+|---------|------------|---------------|
 | `E020` | from < until | `options: 'from' must be before 'until'` |
 | `E021` | max > 0 | `options.max: must be positive, got {v}` |
-| `E022` | jitter < 스케줄 최소 간격의 50% | `options.jitter: {v} exceeds 50% of schedule interval` (경고) |
+| `E022` | jitter < 50% of schedule min interval | `options.jitter: {v} exceeds 50% of schedule interval` (warning) |
 | `E023` | window > 0 | `options.window: must be positive` |
 | `E024` | stagger > 0 | `options.stagger: must be positive` |
-| `E025` | stagger < 스케줄 최소 간격 | `options.stagger: {v} exceeds schedule interval` (경고) |
+| `E025` | stagger < schedule min interval | `options.stagger: {v} exceeds schedule interval` (warning) |
 
-### 5.4 검증 결과 구조
+### 5.4 Warning Codes
+
+Warnings are non-blocking messages that flag potential issues in otherwise valid expressions.
+
+| Rule ID | Validation | Warning message |
+|---------|------------|-----------------|
+| `E022` | jitter < 50% of schedule min interval | `options.jitter: {v} exceeds 50% of schedule interval` |
+| `E025` | stagger < schedule min interval | `options.stagger: {v} exceeds schedule interval` |
+| `W001` | Duplicate tag value (e.g. `tag:foo+bar+foo`) | `duplicate tag '{tag}'` |
+
+**Implementation note:** E022/E025 compare against the interval directly extracted from `@every` expressions.
+For cron expressions, computing the minimum interval requires field-combination analysis and is currently not applied.
+
+### 5.5 Validation Result Structure
 
 ```
 ValidationResult:
@@ -518,7 +545,7 @@ ValidationError:
   Field: string        # "hour"
   Message: string      # "value 25 out of range [0, 23]"
   Value: string        # "25"
-  Position: int?       # 표현식 내 문자 위치 (선택)
+  Position: int?       # character position in the expression (optional)
 
 ValidationWarning:
   Code: string
@@ -528,39 +555,39 @@ ValidationWarning:
 
 ---
 
-## 6. 직렬화/역직렬화
+## 6. Serialization / Deserialization
 
-### 6.1 정규화 (Canonical Form)
+### 6.1 Canonical Form
 
-`ToString()`은 다음 순서로 정규화된 문자열을 반환한다:
+`ToString()` produces a canonical string in this order:
 
 ```
 [TZ=<timezone> ]<schedule>[ {<options>}]
 ```
 
-- 타임존이 설정되어 있으면 `TZ=` 접두사로 시작
-- Options는 키 알파벳 순으로 정렬
-- Duration은 가장 큰 단위부터 (예: `1h30m`, `90m` 아님)
-- 불필요한 공백 제거
+- If a timezone is set, the string begins with a `TZ=` prefix.
+- Options are sorted alphabetically by key.
+- Durations use the largest unit first (e.g. `1h30m`, not `90m`).
+- Extraneous whitespace is removed.
 
-### 6.2 동등성
+### 6.2 Equivalence
 
-두 표현식이 **의미적으로 동등**하려면:
-- 정규화된 schedule body가 동일
-- 타임존이 동일 (없음 = 없음)
-- 모든 options의 key-value가 동일
+Two expressions are **semantically equivalent** if:
+- Their canonical schedule bodies are identical.
+- Their timezones are identical (absent = absent).
+- All option key-value pairs are identical.
 
-`0 0 * * 0`과 `@weekly`는 의미적으로 동등하다.
-`0 0 * * 7`과 `0 0 * * 0`은 의미적으로 동등하다 (둘 다 일요일).
+`0 0 * * 0` and `@weekly` are semantically equivalent.
+`0 0 * * 7` and `0 0 * * 0` are semantically equivalent (both represent Sunday).
 
 ---
 
-## 7. JSON Schema 참고
+## 7. JSON Schema Reference
 
 ### 7.1 TriggerDefinition Schema
 
-`TriggerDefinition`은 직렬화 가능한 트리거 정의다. 런타임 핸들러(delegate)를 포함하지 않으며,
-외부 시스템(CLI, API, 설정 파일 등)이 생성하고 소비 앱이 핸들러를 바인딩하는 패턴을 지원한다.
+`TriggerDefinition` is a serializable trigger specification. It contains no runtime handler (delegate),
+enabling external systems (CLIs, APIs, config files) to produce definitions that consuming apps bind to handlers.
 
 ```json
 {
@@ -599,9 +626,9 @@ ValidationWarning:
 }
 ```
 
-### 7.2 TriggerDefinition 사용 패턴
+### 7.2 TriggerDefinition Usage Pattern
 
-**외부 시스템이 JSON으로 트리거 정의를 생성:**
+**External system produces a trigger definition as JSON:**
 
 ```json
 {
@@ -617,7 +644,7 @@ ValidationWarning:
 }
 ```
 
-**소비 앱이 핸들러를 바인딩:**
+**Consuming app binds a handler:**
 
 ```csharp
 var definition = JsonSerializer.Deserialize<TriggerDefinition>(json);
@@ -629,23 +656,23 @@ scheduler.Register(definition, async (ctx, ct) =>
 });
 ```
 
-이 패턴에서 Chronex가 보장하는 것:
-1. 표현식이 단일 문자열 — 프로그래매틱 생성과 검증이 쉬움
-2. `Validate()`가 구조화된 에러 반환 — 호출자가 잘못된 표현식을 자가 수정 가능
-3. 메타데이터가 자유형 — 소비 앱이 필요한 모든 컨텍스트를 실어 보냄
+What Chronex guarantees in this pattern:
+1. The expression is a single string — easy to generate and validate programmatically.
+2. `Validate()` returns structured errors — callers can self-correct invalid expressions.
+3. Metadata is free-form — the consuming app can carry any context it needs.
 
-### 7.3 Metadata 컨벤션
+### 7.3 Metadata Conventions
 
-Chronex는 metadata 키를 해석하지 않는다. 다음은 소비 앱 간 상호운용을 위한 권장 컨벤션이다:
+Chronex does not interpret metadata keys. The following are recommended conventions for interoperability between consuming apps:
 
-| 키 | 용도 | 예시 |
-|----|------|------|
-| `env` | 환경 태그 | `"prod"`, `"staging"` |
-| `endpoint` | 대상 API 엔드포인트 | `"https://api.example.com"` |
-| `scope` | 실행 격리 힌트 | `"isolated"`, `"shared"` |
-| `scope.session` | 세션 키 | `"cron:health-check"` |
-| `delivery.mode` | 결과 전달 방식 | `"webhook"`, `"queue"`, `"none"` |
-| `delivery.to` | 결과 전달 대상 | `"https://hooks.example.com/results"` |
-| `delivery.channel` | 알림 채널 | `"slack"`, `"email"` |
+| Key | Purpose | Example |
+|-----|---------|---------|
+| `env` | Environment tag | `"prod"`, `"staging"` |
+| `endpoint` | Target API endpoint | `"https://api.example.com"` |
+| `scope` | Execution isolation hint | `"isolated"`, `"shared"` |
+| `scope.session` | Session key | `"cron:health-check"` |
+| `delivery.mode` | Result delivery mode | `"webhook"`, `"queue"`, `"none"` |
+| `delivery.to` | Result destination | `"https://hooks.example.com/results"` |
+| `delivery.channel` | Notification channel | `"slack"`, `"email"` |
 
-이 키들은 강제 사항이 아닌 권장 사항이다. 소비 앱은 자유롭게 자체 키를 정의할 수 있다.
+These are conventions, not enforcement. Consuming apps are free to define their own keys.

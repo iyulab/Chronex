@@ -1,5 +1,10 @@
 # Chronex
 
+[![NuGet](https://img.shields.io/nuget/v/Chronex.svg)](https://www.nuget.org/packages/Chronex)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Chronex.svg)](https://www.nuget.org/packages/Chronex)
+[![CI](https://github.com/iyulab/Chronex/actions/workflows/ci.yml/badge.svg)](https://github.com/iyulab/Chronex/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Extended cron expressions for .NET. Parse, validate, trigger — your app handles the rest.
 
 ```csharp
@@ -84,7 +89,7 @@ var upcoming = expr.Enumerate(DateTimeOffset.UtcNow, count: 20);
 if (ChronexExpression.TryParse(input, out var expr, out var error))
     Console.WriteLine(expr.GetNextOccurrence(DateTimeOffset.UtcNow));
 
-// Validate (structured errors for programmatic consumers)
+// Validate (structured errors and warnings for programmatic consumers)
 var result = ExpressionValidator.Validate("0 25 * * *");
 // result.IsValid → false
 // result.Errors[0]:
@@ -92,6 +97,12 @@ var result = ExpressionValidator.Validate("0 25 * * *");
 //   Field: "hour"
 //   Message: "Value 25 out of range [0, 23]"
 //   Value: "25"
+
+// Warnings (non-blocking)
+var result2 = ExpressionValidator.Validate("@every 10m {jitter:6m}");
+// result2.IsValid → true
+// result2.Warnings[0]:
+//   Code: "E022" — jitter exceeds 50% of schedule interval
 ```
 
 ## Trigger & Schedule
@@ -108,6 +119,10 @@ scheduler.Register("cleanup", "0 3 * * *", async (ctx, ct) =>
 });
 
 scheduler.Start();
+
+// Don't forget to stop and dispose
+await scheduler.StopAsync();
+await scheduler.DisposeAsync();
 ```
 
 ### With Metadata
@@ -229,13 +244,12 @@ public class ReportHandler(IReportService reports) : IChronexHandler
 
 ## Packages
 
-```
-Chronex                 Core: expression parser + scheduler + events
-                        Zero external dependencies (BCL only)
+| Package | Description | Dependencies |
+|---------|-------------|--------------|
+| **Chronex** | Core: expression parser + scheduler + events | BCL only (zero external) |
+| **Chronex.Hosting** | Generic Host integration (`AddChronex`) | Chronex, M.E.Hosting.Abstractions |
 
-Chronex.Hosting         Generic Host integration (AddChronex)
-                        Depends on: Chronex, M.E.Hosting.Abstractions
-```
+Requires **.NET 10** or later.
 
 ## Design
 
