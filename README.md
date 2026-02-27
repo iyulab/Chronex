@@ -251,6 +251,28 @@ public class ReportHandler(IReportService reports) : IChronexHandler
 
 Requires **.NET 10** or later.
 
+## Why Chronex
+
+| | Chronex | Cronos | Quartz.NET | NCrontab |
+|---|---------|--------|------------|----------|
+| **Role** | Parser + mini scheduler | Parser only | Full job framework | Parser only |
+| **Expression** | Standard cron + TZ, @every, @once, jitter, stagger, window, from/until/max — all in one string | 6-field cron | Cron + calendar triggers (API) | 5-field cron |
+| **Special entries** | L, W, LW, L-N, NW, #, DOWL | — | L, W, # | — |
+| **DST handling** | Built-in (Vixie Cron) | Built-in | Built-in | — |
+| **Dependencies** | Zero (BCL only) | Zero | Multiple | Zero |
+| **Scheduler** | Lightweight, event-driven | — | Heavyweight, persistent | — |
+
+Everything in one string — no API wrappers, no builder patterns, no config objects.
+
+## Timezone & DST
+
+Chronex follows Vixie Cron semantics for DST transitions:
+
+- **Spring forward** — if a scheduled time falls in the DST gap, it advances to the next valid time
+- **Fall back** — cron expressions fire once per calendar time (first occurrence); interval expressions may fire twice
+
+See the [specification §3.5](docs/specification.md#35-dst-handling-rules) for full rules.
+
 ## Design
 
 **String-complete.** One string = full schedule definition. Ideal for configs and code generation.

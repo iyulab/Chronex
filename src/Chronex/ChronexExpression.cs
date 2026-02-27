@@ -4,7 +4,7 @@ namespace Chronex;
 /// Represents a parsed Chronex expression — the top-level parsed type.
 /// Supports standard cron, aliases, intervals, one-shot, timezone, and options.
 /// </summary>
-public sealed class ChronexExpression
+public sealed partial class ChronexExpression
 {
     /// <summary>The original expression string.</summary>
     public string Original { get; }
