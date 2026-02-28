@@ -102,7 +102,7 @@ var result = ExpressionValidator.Validate("0 25 * * *");
 var result2 = ExpressionValidator.Validate("@every 10m {jitter:6m}");
 // result2.IsValid → true
 // result2.Warnings[0]:
-//   Code: "E022" — jitter exceeds 50% of schedule interval
+//   Code: "W002" — jitter exceeds 50% of schedule interval
 ```
 
 ## Trigger & Schedule

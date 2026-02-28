@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -17,13 +17,13 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
+        next.Should().NotBeNull();
         var dt = next!.Value;
         // Should match either 15th or a Friday — whichever comes first
         // 2026-01-02 is a Friday; 2026-01-15 is a Thursday
         // So first match should be 2026-01-02 (Friday)
-        dt.Day.ShouldBe(2);
-        dt.DayOfWeek.ShouldBe(DayOfWeek.Friday);
+        dt.Day.Should().Be(2);
+        dt.DayOfWeek.Should().Be(DayOfWeek.Friday);
     }
 
     [Fact]
@@ -34,11 +34,11 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
+        next.Should().NotBeNull();
         var dt = next!.Value;
         // 2026-01-02 is Friday, 2026-01-03 is Saturday
         // First match: 2026-01-02 (Friday)
-        dt.Day.ShouldBe(2);
+        dt.Day.Should().Be(2);
     }
 
     [Fact]
@@ -49,14 +49,14 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         var occurrences = expr.Enumerate(from, 5).ToList();
-        occurrences.Count.ShouldBe(5);
+        occurrences.Count.Should().Be(5);
 
         // Each occurrence should be either the 1st or a Monday
         foreach (var occ in occurrences)
         {
             var isFirst = occ.Day == 1;
             var isMonday = occ.DayOfWeek == DayOfWeek.Monday;
-            (isFirst || isMonday).ShouldBeTrue(
+            (isFirst || isMonday).Should().BeTrue(
                 $"Expected 1st or Monday but got {occ:yyyy-MM-dd} ({occ.DayOfWeek})");
         }
     }
@@ -66,13 +66,13 @@ public class DomDowOrSemanticsTests
     {
         var cron = CronSchedule.Parse(["0", "0", "15", "*", "5"]); // 15th OR Friday
         var friday = new DateTime(2026, 1, 2, 0, 0, 0); // Friday, not 15th
-        cron.Matches(friday).ShouldBeTrue();
+        cron.Matches(friday).Should().BeTrue();
 
         var fifteenth = new DateTime(2026, 1, 15, 0, 0, 0); // 15th, Thursday
-        cron.Matches(fifteenth).ShouldBeTrue();
+        cron.Matches(fifteenth).Should().BeTrue();
 
         var neither = new DateTime(2026, 1, 3, 0, 0, 0); // Saturday, not 15th
-        cron.Matches(neither).ShouldBeFalse();
+        cron.Matches(neither).Should().BeFalse();
     }
 
     [Fact]
@@ -83,8 +83,8 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
-        next!.Value.DayOfWeek.ShouldBe(DayOfWeek.Monday);
+        next.Should().NotBeNull();
+        next!.Value.DayOfWeek.Should().Be(DayOfWeek.Monday);
     }
 
     [Fact]
@@ -95,8 +95,8 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
-        next!.Value.Day.ShouldBe(15);
+        next.Should().NotBeNull();
+        next!.Value.Day.Should().Be(15);
     }
 
     [Fact]
@@ -107,8 +107,8 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
-        next!.Value.Day.ShouldBe(31); // Jan has 31 days
+        next.Should().NotBeNull();
+        next!.Value.Day.Should().Be(31); // Jan has 31 days
     }
 
     [Fact]
@@ -119,17 +119,17 @@ public class DomDowOrSemanticsTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
-        next!.Value.DayOfWeek.ShouldBe(DayOfWeek.Monday);
+        next.Should().NotBeNull();
+        next!.Value.DayOfWeek.Should().Be(DayOfWeek.Monday);
         // Should be the 2nd Monday of January 2026 = Jan 12
-        next!.Value.Day.ShouldBe(12);
+        next!.Value.Day.Should().Be(12);
     }
 
     [Fact]
     public void Matches_BothWild_MatchesAnyDay()
     {
         var cron = CronSchedule.Parse(["0", "0", "*", "*", "*"]);
-        cron.Matches(new DateTime(2026, 1, 1, 0, 0, 0)).ShouldBeTrue();
-        cron.Matches(new DateTime(2026, 6, 15, 0, 0, 0)).ShouldBeTrue();
+        cron.Matches(new DateTime(2026, 1, 1, 0, 0, 0)).Should().BeTrue();
+        cron.Matches(new DateTime(2026, 6, 15, 0, 0, 0)).Should().BeTrue();
     }
 }

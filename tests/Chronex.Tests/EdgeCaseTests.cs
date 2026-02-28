@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -18,7 +18,7 @@ public class EdgeCaseTests
         var from = new DateTime(2026, 1, 31, 1, 0, 0); // After Jan 31
         var next = sched.Next(from);
         // Feb has 28 days, so skip to March 31
-        next.ShouldBe(new DateTime(2026, 3, 31, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 3, 31, 0, 0, 0));
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class EdgeCaseTests
         var from = new DateTime(2026, 3, 31, 1, 0, 0); // After March 31
         var next = sched.Next(from);
         // April has 30 days → skip to May 31
-        next.ShouldBe(new DateTime(2026, 5, 31, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 5, 31, 0, 0, 0));
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class EdgeCaseTests
         var from = new DateTime(2026, 1, 30, 1, 0, 0); // After Jan 30
         var next = sched.Next(from);
         // Feb has 28 days → skip to March 30
-        next.ShouldBe(new DateTime(2026, 3, 30, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 3, 30, 0, 0, 0));
     }
 
     // --- Special cron entries with Next() ---
@@ -51,7 +51,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "15W", "*", "*"]);
         var from = new DateTime(2026, 8, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 8, 14, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 8, 14, 0, 0, 0));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "15W", "*", "*"]);
         var from = new DateTime(2026, 2, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 2, 16, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 2, 16, 0, 0, 0));
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "15W", "*", "*"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 15, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 15, 0, 0, 0));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "LW", "*", "*"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 30, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 30, 0, 0, 0));
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "L-3", "*", "*"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 28, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 28, 0, 0, 0));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "L-3", "*", "*"]);
         var from = new DateTime(2026, 2, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 2, 25, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 2, 25, 0, 0, 0));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "*", "*", "5L"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 30, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 30, 0, 0, 0));
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "*", "*", "MON#1"]);
         var from = new DateTime(2026, 2, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 2, 2, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 2, 2, 0, 0, 0));
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "*", "*", "MON#5"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 3, 30, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 3, 30, 0, 0, 0));
     }
 
     // --- ToString round-trip ---
@@ -157,7 +157,7 @@ public class EdgeCaseTests
         var str = expr.ToString();
         // Should be parseable again
         var roundTripped = ChronexExpression.Parse(str);
-        roundTripped.Kind.ShouldBe(expr.Kind);
+        roundTripped.Kind.Should().Be(expr.Kind);
     }
 
     [Fact]
@@ -166,9 +166,9 @@ public class EdgeCaseTests
         var expr = ChronexExpression.Parse("TZ=UTC 0 9 * * MON-FRI {jitter:30s, max:10}");
         var str = expr.ToString();
         var rt = ChronexExpression.Parse(str);
-        rt.Timezone.ShouldBe("UTC");
-        rt.Options.Jitter.ShouldNotBeNull();
-        rt.Options.Max.ShouldBe(10);
+        rt.Timezone.Should().Be("UTC");
+        rt.Options.Jitter.Should().NotBeNull();
+        rt.Options.Max.Should().Be(10);
     }
 
     // --- Enumerate edge cases ---
@@ -179,7 +179,7 @@ public class EdgeCaseTests
         var expr = ChronexExpression.Parse("*/5 * * * * {max:3}");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var results = expr.Enumerate(from).ToList();
-        results.Count.ShouldBe(3);
+        results.Count.Should().Be(3);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class EdgeCaseTests
         var expr = ChronexExpression.Parse("*/5 * * * * {max:100}");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var results = expr.Enumerate(from, 2).ToList();
-        results.Count.ShouldBe(2);
+        results.Count.Should().Be(2);
     }
 
     [Fact]
@@ -197,8 +197,8 @@ public class EdgeCaseTests
         var expr = ChronexExpression.Parse("@once 2026-06-01T09:00:00Z");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var results = expr.Enumerate(from).ToList();
-        results.Count.ShouldBe(1);
-        results[0].UtcDateTime.ShouldBe(new DateTime(2026, 6, 1, 9, 0, 0));
+        results.Count.Should().Be(1);
+        results[0].UtcDateTime.Should().Be(new DateTime(2026, 6, 1, 9, 0, 0));
     }
 
     // --- Validation: multiple errors ---
@@ -207,8 +207,8 @@ public class EdgeCaseTests
     public void Validate_MultipleErrors()
     {
         var result = ExpressionValidator.Validate("60 25 32 13 8");
-        result.IsValid.ShouldBeFalse();
-        result.Errors.Count.ShouldBeGreaterThan(1);
+        result.IsValid.Should().BeFalse();
+        result.Errors.Count.Should().BeGreaterThan(1);
     }
 
     // --- Parser edge cases ---
@@ -217,20 +217,20 @@ public class EdgeCaseTests
     public void Parse_WhitespaceInExpression_Trimmed()
     {
         var expr = ChronexExpression.Parse("  */5 * * * *  ");
-        expr.Kind.ShouldBe(ScheduleKind.Cron);
+        expr.Kind.Should().Be(ScheduleKind.Cron);
     }
 
     [Fact]
     public void Parse_NullExpression_Throws()
     {
-        Should.Throw<FormatException>(() => ChronexExpression.Parse(""));
+        FluentActions.Invoking(() => ChronexExpression.Parse("")).Should().Throw<FormatException>();
     }
 
     [Fact]
     public void TryParse_NullExpression_ReturnsFalse()
     {
-        ChronexExpression.TryParse("", out _, out var error).ShouldBeFalse();
-        error.ShouldNotBeNull();
+        ChronexExpression.TryParse("", out _, out var error).Should().BeFalse();
+        error.Should().NotBeNull();
     }
 
     // --- Interval edge cases ---
@@ -239,16 +239,16 @@ public class EdgeCaseTests
     public void Interval_VerySmall_1Second()
     {
         var expr = ChronexExpression.Parse("@every 1s");
-        expr.IntervalSchedule.ShouldNotBeNull();
-        expr.IntervalSchedule!.Value.Interval.Value.ShouldBe(TimeSpan.FromSeconds(1));
+        expr.IntervalSchedule.Should().NotBeNull();
+        expr.IntervalSchedule!.Value.Interval.Value.Should().Be(TimeSpan.FromSeconds(1));
     }
 
     [Fact]
     public void Interval_LargeDuration_Days()
     {
         var expr = ChronexExpression.Parse("@every 7d");
-        expr.IntervalSchedule.ShouldNotBeNull();
-        expr.IntervalSchedule!.Value.Interval.Value.ShouldBe(TimeSpan.FromDays(7));
+        expr.IntervalSchedule.Should().NotBeNull();
+        expr.IntervalSchedule!.Value.Interval.Value.Should().Be(TimeSpan.FromDays(7));
     }
 
     // --- Once edge cases ---
@@ -260,7 +260,7 @@ public class EdgeCaseTests
         var fireAt = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero);
         var expr = ChronexExpression.Parse($"@once {fireAt:O}");
         var next = expr.GetNextOccurrence(fireAt);
-        next.ShouldBeNull();
+        next.Should().BeNull();
     }
 
     [Fact]
@@ -270,8 +270,8 @@ public class EdgeCaseTests
         var expr = ChronexExpression.Parse($"@once {fireAt:O}");
         var from = fireAt.AddSeconds(-1);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.ShouldBe(fireAt);
+        next.Should().NotBeNull();
+        next!.Value.Should().Be(fireAt);
     }
 
     // --- Cron with 6-field seconds ---
@@ -282,7 +282,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["*", "*", "*", "*", "*", "*"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 0, 0, 1));
+        next.Should().Be(new DateTime(2026, 1, 1, 0, 0, 1));
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["*/15", "*", "*", "*", "*", "*"]);
         var from = new DateTime(2026, 1, 1, 0, 0, 10);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 0, 0, 15));
+        next.Should().Be(new DateTime(2026, 1, 1, 0, 0, 15));
     }
 
     // --- Reversed range edge cases ---
@@ -305,7 +305,7 @@ public class EdgeCaseTests
         var from = new DateTime(2026, 1, 7, 0, 0, 0);
         var next = sched.Next(from);
         // Next Friday is Jan 9
-        next.ShouldBe(new DateTime(2026, 1, 9, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 9, 0, 0, 0));
     }
 
     [Fact]
@@ -316,7 +316,7 @@ public class EdgeCaseTests
         var from = new DateTime(2026, 4, 1, 0, 0, 0); // April
         var next = sched.Next(from);
         // Next match is Oct 1
-        next.ShouldBe(new DateTime(2026, 10, 1, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 10, 1, 0, 0, 0));
     }
 
     // --- Year boundary wrap ---
@@ -327,7 +327,7 @@ public class EdgeCaseTests
         var sched = CronSchedule.Parse(["0", "0", "*", "*", "*"]);
         var from = new DateTime(2026, 12, 31, 23, 59, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2027, 1, 1, 0, 0, 0));
+        next.Should().Be(new DateTime(2027, 1, 1, 0, 0, 0));
     }
 
     // --- Leap year: Feb 29 ---
@@ -339,7 +339,7 @@ public class EdgeCaseTests
         var from = new DateTime(2027, 1, 1, 0, 0, 0);
         // 2028 is a leap year
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2028, 2, 29, 0, 0, 0));
+        next.Should().Be(new DateTime(2028, 2, 29, 0, 0, 0));
     }
 
     [Fact]
@@ -347,7 +347,7 @@ public class EdgeCaseTests
     {
         var sched = CronSchedule.Parse(["0", "0", "29", "2", "*"]);
         // 2026 is not a leap year — Feb 29 doesn't exist
-        sched.Matches(new DateTime(2026, 2, 28, 0, 0, 0)).ShouldBeFalse();
+        sched.Matches(new DateTime(2026, 2, 28, 0, 0, 0)).Should().BeFalse();
     }
 
     // --- ScheduleOptions edge cases ---
@@ -355,8 +355,8 @@ public class EdgeCaseTests
     [Fact]
     public void Options_NegativeMax_Fails()
     {
-        ScheduleOptions.TryParse("max:-1", out _, out var error).ShouldBeFalse();
-        error.ShouldNotBeNull();
+        ScheduleOptions.TryParse("max:-1", out _, out var error).Should().BeFalse();
+        error.Should().NotBeNull();
     }
 
     [Fact]
@@ -364,15 +364,15 @@ public class EdgeCaseTests
     {
         // Duplicate keys: last value should take effect
         var opts = ScheduleOptions.Parse("max:5, max:10");
-        opts.Max.ShouldBe(10);
+        opts.Max.Should().Be(10);
     }
 
     [Fact]
     public void Options_EmptyTag_Parsed()
     {
         var opts = ScheduleOptions.Parse("tag:single");
-        opts.Tags.ShouldNotBeNull();
-        opts.Tags!.Count.ShouldBe(1);
-        opts.Tags[0].ShouldBe("single");
+        opts.Tags.Should().NotBeNull();
+        opts.Tags!.Count.Should().Be(1);
+        opts.Tags[0].Should().Be("single");
     }
 }

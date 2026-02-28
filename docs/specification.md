@@ -329,7 +329,7 @@ Relative durations are resolved to absolute times at parse time. For determinism
 ```csharp
 // Explicit reference time — deterministic
 var expr = ChronexExpression.Parse("@once +20m", referenceTime: DateTimeOffset.UtcNow);
-expr.OnceAt  // → referenceTime + 20 minutes as an absolute instant
+expr.OnceSchedule!.Value.FireAt  // → referenceTime + 20 minutes as an absolute instant
 
 // No reference time — uses UTC Now at the moment of Parse call
 var expr = ChronexExpression.Parse("@once +20m");
@@ -514,10 +514,8 @@ The parser applies the following rules and returns a structured list of errors o
 |---------|------------|---------------|
 | `E020` | from < until | `options: 'from' must be before 'until'` |
 | `E021` | max > 0 | `options.max: must be positive, got {v}` |
-| `E022` | jitter < 50% of schedule min interval | `options.jitter: {v} exceeds 50% of schedule interval` (warning) |
 | `E023` | window > 0 | `options.window: must be positive` |
 | `E024` | stagger > 0 | `options.stagger: must be positive` |
-| `E025` | stagger < schedule min interval | `options.stagger: {v} exceeds schedule interval` (warning) |
 
 ### 5.4 Warning Codes
 
@@ -525,11 +523,11 @@ Warnings are non-blocking messages that flag potential issues in otherwise valid
 
 | Rule ID | Validation | Warning message |
 |---------|------------|-----------------|
-| `E022` | jitter < 50% of schedule min interval | `options.jitter: {v} exceeds 50% of schedule interval` |
-| `E025` | stagger < schedule min interval | `options.stagger: {v} exceeds schedule interval` |
 | `W001` | Duplicate tag value (e.g. `tag:foo+bar+foo`) | `duplicate tag '{tag}'` |
+| `W002` | jitter < 50% of schedule min interval | `options.jitter: {v} exceeds 50% of schedule interval` |
+| `W003` | stagger < schedule min interval | `options.stagger: {v} exceeds schedule interval` |
 
-**Implementation note:** E022/E025 compare against the interval directly extracted from `@every` expressions.
+**Implementation note:** W002/W003 compare against the interval directly extracted from `@every` expressions.
 For cron expressions, computing the minimum interval requires field-combination analysis and is currently not applied.
 
 ### 5.5 Validation Result Structure

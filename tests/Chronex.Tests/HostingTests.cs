@@ -1,6 +1,6 @@
 using Chronex.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -20,8 +20,8 @@ public class HostingTests
         var scheduler1 = sp.GetRequiredService<ChronexScheduler>();
         var scheduler2 = sp.GetRequiredService<ChronexScheduler>();
 
-        scheduler1.ShouldNotBeNull();
-        scheduler1.ShouldBeSameAs(scheduler2); // Singleton
+        scheduler1.Should().NotBeNull();
+        scheduler1.Should().BeSameAs(scheduler2); // Singleton
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class HostingTests
 
         var sp = services.BuildServiceProvider();
         var scheduler = sp.GetRequiredService<ChronexScheduler>();
-        scheduler.ShouldNotBeNull();
+        scheduler.Should().NotBeNull();
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class HostingTests
 
         var sp = services.BuildServiceProvider();
         var handler = sp.GetService<TestHandler>();
-        handler.ShouldNotBeNull();
+        handler.Should().NotBeNull();
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class HostingTests
 
         var sp = services.BuildServiceProvider();
         var scheduler = sp.GetRequiredService<ChronexScheduler>();
-        scheduler.ShouldNotBeNull();
+        scheduler.Should().NotBeNull();
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class HostingTests
 
         var sp = services.BuildServiceProvider();
         var scheduler = sp.GetRequiredService<ChronexScheduler>();
-        scheduler.ShouldNotBeNull();
+        scheduler.Should().NotBeNull();
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public class HostingTests
 
         var sp = services.BuildServiceProvider();
         var scheduler = sp.GetRequiredService<ChronexScheduler>();
-        scheduler.ShouldNotBeNull();
+        scheduler.Should().NotBeNull();
     }
 
     [Fact]
@@ -115,8 +115,8 @@ public class HostingTests
         var sp = services.BuildServiceProvider();
 
         var scheduler = sp.GetRequiredService<ChronexScheduler>();
-        scheduler.ShouldNotBeNull();
-        scheduler.GetTriggers().Count.ShouldBe(0);
+        scheduler.Should().NotBeNull();
+        scheduler.GetTriggers().Count.Should().Be(0);
     }
 }
 

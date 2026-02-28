@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -15,14 +15,14 @@ public class CronAliasTests
     [InlineData("@hourly", "0", "*", "*", "*", "*")]
     public void TryResolve_KnownAliases(string alias, string m, string h, string dom, string mon, string dow)
     {
-        CronAlias.TryResolve(alias, out var fields).ShouldBeTrue();
-        fields.ShouldNotBeNull();
-        fields!.Length.ShouldBe(5);
-        fields[0].ShouldBe(m);
-        fields[1].ShouldBe(h);
-        fields[2].ShouldBe(dom);
-        fields[3].ShouldBe(mon);
-        fields[4].ShouldBe(dow);
+        CronAlias.TryResolve(alias, out var fields).Should().BeTrue();
+        fields.Should().NotBeNull();
+        fields!.Length.Should().Be(5);
+        fields[0].Should().Be(m);
+        fields[1].Should().Be(h);
+        fields[2].Should().Be(dom);
+        fields[3].Should().Be(mon);
+        fields[4].Should().Be(dow);
     }
 
     [Theory]
@@ -30,14 +30,14 @@ public class CronAliasTests
     [InlineData("@Daily")]
     public void TryResolve_CaseInsensitive(string alias)
     {
-        CronAlias.TryResolve(alias, out var fields).ShouldBeTrue();
-        fields.ShouldNotBeNull();
+        CronAlias.TryResolve(alias, out var fields).Should().BeTrue();
+        fields.Should().NotBeNull();
     }
 
     [Fact]
     public void TryResolve_Unknown_ReturnsFalse()
     {
-        CronAlias.TryResolve("@biweekly", out var fields).ShouldBeFalse();
-        fields.ShouldBeNull();
+        CronAlias.TryResolve("@biweekly", out var fields).Should().BeFalse();
+        fields.Should().BeNull();
     }
 }

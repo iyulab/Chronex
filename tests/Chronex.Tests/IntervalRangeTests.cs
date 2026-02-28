@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -18,10 +18,10 @@ public class IntervalRangeTests
         for (var i = 0; i < 20; i++)
         {
             var next = expr.GetNextOccurrence(from);
-            next.ShouldNotBeNull();
+            next.Should().NotBeNull();
             var interval = next!.Value - from;
-            interval.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromHours(1));
-            interval.ShouldBeLessThanOrEqualTo(TimeSpan.FromHours(2));
+            interval.Should().BeGreaterThanOrEqualTo(TimeSpan.FromHours(1));
+            interval.Should().BeLessThanOrEqualTo(TimeSpan.FromHours(2));
         }
     }
 
@@ -32,14 +32,14 @@ public class IntervalRangeTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         var occurrences = expr.Enumerate(from, 10).ToList();
-        occurrences.Count.ShouldBe(10);
+        occurrences.Count.Should().Be(10);
 
         var prev = from;
         foreach (var occ in occurrences)
         {
             var interval = occ - prev;
-            interval.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromMinutes(30));
-            interval.ShouldBeLessThanOrEqualTo(TimeSpan.FromHours(1));
+            interval.Should().BeGreaterThanOrEqualTo(TimeSpan.FromMinutes(30));
+            interval.Should().BeLessThanOrEqualTo(TimeSpan.FromHours(1));
             prev = occ;
         }
     }
@@ -59,7 +59,7 @@ public class IntervalRangeTests
         }
 
         // With a 9-minute range, 50 samples should produce multiple different values
-        results.Count.ShouldBeGreaterThan(1);
+        results.Count.Should().BeGreaterThan(1);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class IntervalRangeTests
         for (var i = 0; i < 5; i++)
         {
             var next = expr.GetNextOccurrence(from);
-            next!.Value.ShouldBe(expected);
+            next!.Value.Should().Be(expected);
         }
     }
 
@@ -86,7 +86,7 @@ public class IntervalRangeTests
         // The interval would push past until date
         if (next != null)
         {
-            next.Value.ShouldBeLessThanOrEqualTo(
+            next.Value.Should().BeOnOrBefore(
                 new DateTimeOffset(2026, 1, 1, 23, 59, 59, 999, TimeSpan.Zero));
         }
     }

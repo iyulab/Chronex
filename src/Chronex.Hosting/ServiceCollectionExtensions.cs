@@ -53,6 +53,9 @@ public sealed class ChronexBuilder
     public ChronexBuilder AddTrigger<THandler>(string id, string expression)
         where THandler : class, IChronexHandler
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+
         _services.TryAddTransient<THandler>();
         _services.AddSingleton(new TriggerDescriptor(id, expression, typeof(THandler)));
         return this;
@@ -67,6 +70,8 @@ public sealed class ChronexBuilder
     public ChronexBuilder AddTrigger<THandler>(TriggerDefinition definition)
         where THandler : class, IChronexHandler
     {
+        ArgumentNullException.ThrowIfNull(definition);
+
         _services.TryAddTransient<THandler>();
         _services.AddSingleton(new TriggerDescriptor(definition.Id, definition.Expression,
             typeof(THandler), definition.Enabled, definition.Metadata));
@@ -79,6 +84,10 @@ public sealed class ChronexBuilder
     public ChronexBuilder AddTrigger(string id, string expression,
         Func<TriggerContext, CancellationToken, Task> handler)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        ArgumentNullException.ThrowIfNull(handler);
+
         _services.AddSingleton(new TriggerDescriptor(id, expression, handler));
         return this;
     }

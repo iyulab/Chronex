@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -13,8 +13,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("*/5 * * * *");
         var from = new DateTimeOffset(2026, 1, 1, 0, 3, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.DateTime.ShouldBe(new DateTime(2026, 1, 1, 0, 5, 0));
+        next.Should().NotBeNull();
+        next!.Value.DateTime.Should().Be(new DateTime(2026, 1, 1, 0, 5, 0));
     }
 
     [Fact]
@@ -23,8 +23,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("TZ=UTC 0 9 * * *");
         var from = new DateTimeOffset(2026, 1, 1, 8, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.UtcDateTime.ShouldBe(new DateTime(2026, 1, 1, 9, 0, 0));
+        next.Should().NotBeNull();
+        next!.Value.UtcDateTime.Should().Be(new DateTime(2026, 1, 1, 9, 0, 0));
     }
 
     [Fact]
@@ -33,8 +33,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("@daily");
         var from = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.DateTime.ShouldBe(new DateTime(2026, 1, 2, 0, 0, 0));
+        next.Should().NotBeNull();
+        next!.Value.DateTime.Should().Be(new DateTime(2026, 1, 2, 0, 0, 0));
     }
 
     // --- Interval ---
@@ -45,8 +45,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("@every 30m");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.ShouldBe(from + TimeSpan.FromMinutes(30));
+        next.Should().NotBeNull();
+        next!.Value.Should().Be(from + TimeSpan.FromMinutes(30));
     }
 
     // --- Once ---
@@ -57,8 +57,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("@once 2026-06-01T09:00:00Z");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.UtcDateTime.ShouldBe(new DateTime(2026, 6, 1, 9, 0, 0));
+        next.Should().NotBeNull();
+        next!.Value.UtcDateTime.Should().Be(new DateTime(2026, 6, 1, 9, 0, 0));
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("@once 2020-01-01T00:00:00Z");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldBeNull();
+        next.Should().BeNull();
     }
 
     [Fact]
@@ -77,8 +77,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("@once +20m", refTime);
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.ShouldBe(refTime + TimeSpan.FromMinutes(20));
+        next.Should().NotBeNull();
+        next!.Value.Should().Be(refTime + TimeSpan.FromMinutes(20));
     }
 
     // --- Options: from/until ---
@@ -90,8 +90,8 @@ public class ChronexExpressionNextTests
         // from is before the constraint — should jump to June
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.DateTime.Month.ShouldBeGreaterThanOrEqualTo(6);
+        next.Should().NotBeNull();
+        next!.Value.DateTime.Month.Should().BeGreaterThanOrEqualTo(6);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("0 9 * * * {until:2026-01-02}");
         var from = new DateTimeOffset(2026, 1, 3, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldBeNull();
+        next.Should().BeNull();
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("@every 30m {until:2026-01-01}");
         var from = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldBeNull();
+        next.Should().BeNull();
     }
 
     // --- Multiple occurrences ---
@@ -120,8 +120,8 @@ public class ChronexExpressionNextTests
         var expr = ChronexExpression.Parse("0 0 * * *");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var t1 = expr.GetNextOccurrence(from);
-        t1!.Value.DateTime.ShouldBe(new DateTime(2026, 1, 2, 0, 0, 0));
+        t1!.Value.DateTime.Should().Be(new DateTime(2026, 1, 2, 0, 0, 0));
         var t2 = expr.GetNextOccurrence(t1.Value);
-        t2!.Value.DateTime.ShouldBe(new DateTime(2026, 1, 3, 0, 0, 0));
+        t2!.Value.DateTime.Should().Be(new DateTime(2026, 1, 3, 0, 0, 0));
     }
 }

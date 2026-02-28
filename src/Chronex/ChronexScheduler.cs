@@ -48,6 +48,10 @@ public sealed class ChronexScheduler : IAsyncDisposable
         Func<TriggerContext, CancellationToken, Task> handler,
         DateTimeOffset? referenceTime = null)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        ArgumentNullException.ThrowIfNull(handler);
+
         var expr = ChronexExpression.Parse(expression, referenceTime);
         return Register(id, expr, handler);
     }
@@ -58,6 +62,10 @@ public sealed class ChronexScheduler : IAsyncDisposable
     public TriggerRegistration Register(string id, ChronexExpression expression,
         Func<TriggerContext, CancellationToken, Task> handler)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(handler);
+
         var reg = new TriggerRegistration(id, expression, handler);
         var now = _timeProvider.GetUtcNow();
         reg.NextFireTime = expression.GetNextOccurrence(now);
@@ -76,6 +84,9 @@ public sealed class ChronexScheduler : IAsyncDisposable
     public TriggerRegistration Register(TriggerDefinition definition,
         Func<TriggerContext, CancellationToken, Task> handler)
     {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(handler);
+
         var expr = ChronexExpression.Parse(definition.Expression);
         var reg = new TriggerRegistration(definition.Id, expr, handler, definition.Metadata);
         var now = _timeProvider.GetUtcNow();
@@ -181,18 +192,20 @@ public sealed class ChronexScheduler : IAsyncDisposable
 
         foreach (var reg in _triggers.Values)
         {
-            if (reg.NextFireTime == null)
+            // C-5: Capture NextFireTime locally to avoid TOCTOU race
+            var nextFireTime = reg.NextFireTime;
+            if (nextFireTime == null)
                 continue;
 
             if (!reg.Enabled)
             {
-                if (now >= reg.NextFireTime.Value)
+                if (now >= nextFireTime.Value)
                     TriggerSkipped?.Invoke(reg.Id, "disabled");
                 continue;
             }
 
             // Calculate effective fire time with stagger offset
-            var effectiveFireTime = reg.NextFireTime.Value;
+            var effectiveFireTime = nextFireTime.Value;
             if (reg.Expression.Options.Stagger.HasValue)
             {
                 var staggerOffset = ComputeStaggerOffset(reg.Id, reg.Expression.Options.Stagger.Value.Value);
@@ -220,7 +233,7 @@ public sealed class ChronexScheduler : IAsyncDisposable
                     continue;
                 }
 
-                var scheduledTime = reg.NextFireTime.Value;
+                var scheduledTime = nextFireTime.Value;
 
                 // C-3: Set NextFireTime to null before handler to prevent double-fire
                 reg.NextFireTime = null;
@@ -253,7 +266,8 @@ public sealed class ChronexScheduler : IAsyncDisposable
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
-                    // Issue 2: Restore NextFireTime before propagating cancellation
+                    // C-5: Rollback FireCount and restore NextFireTime on cancellation
+                    Interlocked.Decrement(ref reg._fireCount);
                     reg.NextFireTime = reg.Expression.GetNextOccurrence(scheduledTime);
                     throw;
                 }
@@ -288,15 +302,33 @@ public sealed class ChronexScheduler : IAsyncDisposable
 
     /// <summary>
     /// Computes a deterministic stagger offset based on the trigger ID.
-    /// The offset is hash(id) % stagger, producing a fixed value for the same ID.
+    /// Uses FNV-1a hash for cross-platform/cross-version determinism
+    /// (string.GetHashCode is non-deterministic across .NET versions).
     /// </summary>
     private static TimeSpan ComputeStaggerOffset(string triggerId, TimeSpan stagger)
     {
-        var hash = (uint)triggerId.GetHashCode(StringComparison.Ordinal);
+        var hash = Fnv1aHash(triggerId);
         var staggerMs = (long)stagger.TotalMilliseconds;
         if (staggerMs <= 0) return TimeSpan.Zero;
         var offsetMs = (long)(hash % (ulong)staggerMs);
         return TimeSpan.FromMilliseconds(offsetMs);
+    }
+
+    /// <summary>
+    /// FNV-1a 32-bit hash — deterministic across .NET versions and platforms.
+    /// </summary>
+    private static uint Fnv1aHash(string input)
+    {
+        const uint fnvOffsetBasis = 2166136261;
+        const uint fnvPrime = 16777619;
+
+        var hash = fnvOffsetBasis;
+        foreach (var ch in input)
+        {
+            hash ^= ch;
+            hash *= fnvPrime;
+        }
+        return hash;
     }
 
     /// <inheritdoc />

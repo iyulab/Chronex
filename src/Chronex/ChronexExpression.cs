@@ -15,8 +15,8 @@ public sealed partial class ChronexExpression
     /// <summary>IANA timezone identifier, if specified via TZ= prefix. Null means UTC/local.</summary>
     public string? Timezone { get; }
 
-    /// <summary>TimeZoneInfo resolved from the Timezone property. Null if no TZ= prefix.</summary>
-    public TimeZoneInfo? TimeZoneInfo { get; }
+    /// <summary>Resolved <see cref="System.TimeZoneInfo"/> from the <see cref="Timezone"/> property. Null if no TZ= prefix.</summary>
+    public TimeZoneInfo? ScheduleTimeZone { get; }
 
     /// <summary>Parsed cron schedule. Non-null when Kind is Cron or Alias.</summary>
     public CronSchedule? CronSchedule { get; }
@@ -41,7 +41,7 @@ public sealed partial class ChronexExpression
         Original = original;
         Kind = kind;
         Timezone = timezone;
-        TimeZoneInfo = tzInfo;
+        ScheduleTimeZone = tzInfo;
         CronSchedule = cronSchedule;
         IntervalSchedule = intervalSchedule;
         OnceSchedule = onceSchedule;
@@ -173,7 +173,8 @@ public sealed partial class ChronexExpression
 
     /// <summary>
     /// Checks whether a given date/time matches this expression's schedule.
-    /// Supports Cron, Alias, and Once kinds.
+    /// Supported for Cron and Alias kinds only.
+    /// Returns false for Interval and Once kinds (these are time-relative, not point-matching).
     /// </summary>
     public bool Matches(DateTime dt)
     {
@@ -270,7 +271,7 @@ public sealed partial class ChronexExpression
     {
         if (CronSchedule == null) return null;
 
-        var tz = TimeZoneInfo ?? System.TimeZoneInfo.Utc;
+        var tz = ScheduleTimeZone ?? TimeZoneInfo.Utc;
 
         // Convert from to the schedule's timezone
         var localFrom = TimeZoneInfo.ConvertTime(from, tz);
@@ -314,8 +315,9 @@ public sealed partial class ChronexExpression
         {
             var minMs = (long)ivl.Interval.Value.TotalMilliseconds;
             var maxMs = (long)ivl.MaxInterval.Value.Value.TotalMilliseconds;
+            // C-5: +1 for inclusive upper bound [min, max]
             interval = TimeSpan.FromMilliseconds(
-                minMs + Random.Shared.NextInt64(maxMs - minMs));
+                minMs + Random.Shared.NextInt64(maxMs - minMs + 1));
         }
         else
         {
@@ -386,7 +388,7 @@ public sealed partial class ChronexExpression
             // Use -2h to be safely before the gap boundary (typical gap is 1h)
             var baseOffset = tz.GetUtcOffset(localDt.AddHours(-2));
             var utcTime = DateTime.SpecifyKind(localDt - baseOffset, DateTimeKind.Utc);
-            var correctLocal = System.TimeZoneInfo.ConvertTimeFromUtc(utcTime, tz);
+            var correctLocal = TimeZoneInfo.ConvertTimeFromUtc(utcTime, tz);
             return new DateTimeOffset(correctLocal, tz.GetUtcOffset(correctLocal));
         }
 

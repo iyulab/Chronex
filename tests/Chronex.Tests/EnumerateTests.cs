@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -11,9 +11,9 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("0 0 * * *");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from, 5).ToList();
-        occurrences.Count.ShouldBe(5);
-        occurrences[0].DateTime.ShouldBe(new DateTime(2026, 1, 2, 0, 0, 0));
-        occurrences[4].DateTime.ShouldBe(new DateTime(2026, 1, 6, 0, 0, 0));
+        occurrences.Count.Should().Be(5);
+        occurrences[0].DateTime.Should().Be(new DateTime(2026, 1, 2, 0, 0, 0));
+        occurrences[4].DateTime.Should().Be(new DateTime(2026, 1, 6, 0, 0, 0));
     }
 
     [Fact]
@@ -22,7 +22,7 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("*/5 * * * * {max:3}");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from).ToList();
-        occurrences.Count.ShouldBe(3);
+        occurrences.Count.Should().Be(3);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class EnumerateTests
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from, 100).ToList();
         // Jan 2, 3, 4, 5 (until is end of Jan 5)
-        occurrences.Count.ShouldBe(4);
+        occurrences.Count.Should().Be(4);
     }
 
     [Fact]
@@ -41,10 +41,10 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("@every 1h");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from, 3).ToList();
-        occurrences.Count.ShouldBe(3);
-        occurrences[0].ShouldBe(from + TimeSpan.FromHours(1));
-        occurrences[1].ShouldBe(from + TimeSpan.FromHours(2));
-        occurrences[2].ShouldBe(from + TimeSpan.FromHours(3));
+        occurrences.Count.Should().Be(3);
+        occurrences[0].Should().Be(from + TimeSpan.FromHours(1));
+        occurrences[1].Should().Be(from + TimeSpan.FromHours(2));
+        occurrences[2].Should().Be(from + TimeSpan.FromHours(3));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("@once 2026-06-01T09:00:00Z");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from, 10).ToList();
-        occurrences.Count.ShouldBe(1);
+        occurrences.Count.Should().Be(1);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("0 0 * * * {max:100}");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from, 3).ToList();
-        occurrences.Count.ShouldBe(3);
+        occurrences.Count.Should().Be(3);
     }
 
     [Fact]
@@ -71,8 +71,8 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("0 9 * * * {from:2026-06-01}");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from, 1).ToList();
-        occurrences.Count.ShouldBe(1);
-        occurrences[0].DateTime.Month.ShouldBeGreaterThanOrEqualTo(6);
+        occurrences.Count.Should().Be(1);
+        occurrences[0].DateTime.Month.Should().BeGreaterThanOrEqualTo(6);
     }
 
     [Fact]
@@ -83,8 +83,8 @@ public class EnumerateTests
         var occurrences = expr.Enumerate(from, 5).ToList();
         foreach (var occ in occurrences)
         {
-            occ.DayOfWeek.ShouldNotBe(DayOfWeek.Saturday);
-            occ.DayOfWeek.ShouldNotBe(DayOfWeek.Sunday);
+            occ.DayOfWeek.Should().NotBe(DayOfWeek.Saturday);
+            occ.DayOfWeek.Should().NotBe(DayOfWeek.Sunday);
         }
     }
 
@@ -94,6 +94,6 @@ public class EnumerateTests
         var expr = ChronexExpression.Parse("@once 2020-01-01T00:00:00Z");
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var occurrences = expr.Enumerate(from).ToList();
-        occurrences.ShouldBeEmpty();
+        occurrences.Should().BeEmpty();
     }
 }

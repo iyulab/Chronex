@@ -62,7 +62,7 @@ public sealed class ValidationError
 /// </summary>
 public sealed class ValidationWarning
 {
-    /// <summary>Warning code (e.g., "E022").</summary>
+    /// <summary>Warning code (e.g., "W001").</summary>
     public string Code { get; }
 
     /// <summary>Field that triggered the warning.</summary>

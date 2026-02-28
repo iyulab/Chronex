@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -9,7 +9,7 @@ public class ToStringTests
     public void ToString_SimpleCron()
     {
         var expr = ChronexExpression.Parse("*/5 * * * *");
-        expr.ToString().ShouldBe("*/5 * * * *");
+        expr.ToString().Should().Be("*/5 * * * *");
     }
 
     [Fact]
@@ -17,8 +17,8 @@ public class ToStringTests
     {
         var expr = ChronexExpression.Parse("TZ=UTC 0 9 * * MON-FRI");
         var str = expr.ToString();
-        str.ShouldStartWith("TZ=UTC");
-        str.ShouldContain("0 9 * * MON-FRI");
+        str.Should().StartWith("TZ=UTC");
+        str.Should().Contain("0 9 * * MON-FRI");
     }
 
     [Fact]
@@ -26,30 +26,30 @@ public class ToStringTests
     {
         var expr = ChronexExpression.Parse("0 9 * * * {jitter:30s, max:10}");
         var str = expr.ToString();
-        str.ShouldContain("0 9 * * *");
-        str.ShouldContain("jitter:30s");
-        str.ShouldContain("max:10");
+        str.Should().Contain("0 9 * * *");
+        str.Should().Contain("jitter:30s");
+        str.Should().Contain("max:10");
     }
 
     [Fact]
     public void ToString_Interval()
     {
         var expr = ChronexExpression.Parse("@every 30m");
-        expr.ToString().ShouldBe("@every 30m");
+        expr.ToString().Should().Be("@every 30m");
     }
 
     [Fact]
     public void ToString_IntervalRange()
     {
         var expr = ChronexExpression.Parse("@every 1h-2h");
-        expr.ToString().ShouldBe("@every 1h-2h");
+        expr.ToString().Should().Be("@every 1h-2h");
     }
 
     [Fact]
     public void ToString_Alias()
     {
         var expr = ChronexExpression.Parse("@daily");
-        expr.ToString().ShouldBe("@daily");
+        expr.ToString().Should().Be("@daily");
     }
 
     [Fact]
@@ -57,9 +57,9 @@ public class ToStringTests
     {
         var expr = ChronexExpression.Parse("@once 2025-03-01T09:00:00+09:00");
         var str = expr.ToString();
-        str.ShouldStartWith("@once");
+        str.Should().StartWith("@once");
         // Should contain the ISO datetime
-        str.ShouldContain("2025-03-01");
+        str.Should().Contain("2025-03-01");
     }
 
     [Fact]
@@ -67,16 +67,16 @@ public class ToStringTests
     {
         var expr = ChronexExpression.Parse("TZ=UTC 0 9 * * MON-FRI {jitter:30s}");
         var str = expr.ToString();
-        str.ShouldStartWith("TZ=UTC");
-        str.ShouldContain("0 9 * * MON-FRI");
-        str.ShouldContain("jitter:30s");
+        str.Should().StartWith("TZ=UTC");
+        str.Should().Contain("0 9 * * MON-FRI");
+        str.Should().Contain("jitter:30s");
     }
 
     [Fact]
     public void ScheduleOptions_ToString_Empty()
     {
         var opts = new ScheduleOptions();
-        opts.ToString().ShouldBeEmpty();
+        opts.ToString().Should().BeEmpty();
     }
 
     [Fact]
@@ -84,10 +84,10 @@ public class ToStringTests
     {
         var opts = ScheduleOptions.Parse("jitter:5m, stagger:3m, window:10m, max:100, tag:a+b");
         var str = opts.ToString();
-        str.ShouldContain("jitter:5m");
-        str.ShouldContain("stagger:3m");
-        str.ShouldContain("window:10m");
-        str.ShouldContain("max:100");
-        str.ShouldContain("tag:a+b");
+        str.Should().Contain("jitter:5m");
+        str.Should().Contain("stagger:3m");
+        str.Should().Contain("window:10m");
+        str.Should().Contain("max:100");
+        str.Should().Contain("tag:a+b");
     }
 }

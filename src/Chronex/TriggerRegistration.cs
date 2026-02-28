@@ -14,7 +14,7 @@ public sealed class TriggerRegistration
     /// <summary>The handler to invoke when the trigger fires.</summary>
     internal Func<TriggerContext, CancellationToken, Task> Handler { get; }
 
-    // Issue 3: volatile fields for thread-safe reads across threads
+    private readonly object _lock = new();
     private volatile bool _enabled = true;
     private DateTimeOffset? _nextFireTime;
     private DateTimeOffset? _lastFired;
@@ -29,15 +29,15 @@ public sealed class TriggerRegistration
     /// <summary>The last time this trigger fired.</summary>
     public DateTimeOffset? LastFired
     {
-        get { lock (this) { return _lastFired; } }
-        internal set { lock (this) { _lastFired = value; } }
+        get { lock (_lock) { return _lastFired; } }
+        internal set { lock (_lock) { _lastFired = value; } }
     }
 
     /// <summary>The next scheduled fire time.</summary>
     public DateTimeOffset? NextFireTime
     {
-        get { lock (this) { return _nextFireTime; } }
-        internal set { lock (this) { _nextFireTime = value; } }
+        get { lock (_lock) { return _nextFireTime; } }
+        internal set { lock (_lock) { _nextFireTime = value; } }
     }
 
     // C-3: Backing field for Interlocked.Increment

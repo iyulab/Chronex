@@ -203,15 +203,15 @@ public static class ExpressionValidator
         if (options.Stagger.HasValue && options.Stagger.Value.Value <= TimeSpan.Zero)
             errors.Add(new("E024", "options.stagger", "must be positive"));
 
-        // E022/E025: jitter/stagger vs schedule interval warnings
+        // W002/W003: jitter/stagger vs schedule interval warnings
         if (scheduleInterval.HasValue && scheduleInterval.Value > TimeSpan.Zero)
         {
             if (options.Jitter.HasValue && options.Jitter.Value.Value > scheduleInterval.Value * 0.5)
-                warnings.Add(new("E022", "options.jitter",
+                warnings.Add(new("W002", "options.jitter",
                     $"jitter {options.Jitter.Value} exceeds 50% of schedule interval"));
 
             if (options.Stagger.HasValue && options.Stagger.Value.Value > scheduleInterval.Value)
-                warnings.Add(new("E025", "options.stagger",
+                warnings.Add(new("W003", "options.stagger",
                     $"stagger {options.Stagger.Value} exceeds schedule interval"));
         }
 

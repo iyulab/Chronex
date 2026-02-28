@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -44,7 +44,7 @@ public class ConcurrencyTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        fireCount.ShouldBeLessThanOrEqualTo(1);
+        fireCount.Should().BeLessThanOrEqualTo(1);
         await scheduler.StopAsync();
     }
 
@@ -67,7 +67,7 @@ public class ConcurrencyTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        fired.ShouldBeTrue();
+        fired.Should().BeTrue();
         await scheduler.StopAsync();
     }
 
@@ -89,8 +89,8 @@ public class ConcurrencyTests
         // Should not throw even though trigger unregisters itself during handler
         await scheduler.TickAsync();
 
-        fireCount.ShouldBe(1);
-        scheduler.GetTrigger("self-remove").ShouldBeNull();
+        fireCount.Should().Be(1);
+        scheduler.GetTrigger("self-remove").Should().BeNull();
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class ConcurrencyTests
         await scheduler.TickAsync();
         await scheduler.StopAsync();
 
-        fireCount.ShouldBe(2);
+        fireCount.Should().Be(2);
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class ConcurrencyTests
         var scheduler = new ChronexScheduler();
         await scheduler.DisposeAsync();
 
-        Should.Throw<ObjectDisposedException>(() => scheduler.Start());
+        FluentActions.Invoking(() => scheduler.Start()).Should().Throw<ObjectDisposedException>();
     }
 
     [Fact]
@@ -157,8 +157,8 @@ public class ConcurrencyTests
 
         // Trigger should still be scheduled for next occurrence
         var trigger = scheduler.GetTrigger("test");
-        trigger.ShouldNotBeNull();
-        trigger!.FireCount.ShouldBe(1);
+        trigger.Should().NotBeNull();
+        trigger!.FireCount.Should().Be(1);
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public class ConcurrencyTests
         tp.Advance(TimeSpan.FromMinutes(1));
 
         // C-4: OperationCanceledException should propagate
-        await Should.ThrowAsync<OperationCanceledException>(
-            () => scheduler.TickAsync(cts.Token));
+        var act = async () => await scheduler.TickAsync(cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 }

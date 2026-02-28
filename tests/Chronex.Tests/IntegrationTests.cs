@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -39,8 +39,8 @@ public class IntegrationTests
         tp.Advance(TimeSpan.FromMinutes(5));
         await scheduler.TickAsync();
 
-        capturedEnv.ShouldBe("prod");
-        capturedEndpoint.ShouldBe("https://api.example.com");
+        capturedEnv.Should().Be("prod");
+        capturedEndpoint.Should().Be("https://api.example.com");
     }
 
     [Fact]
@@ -57,12 +57,12 @@ public class IntegrationTests
         var json = JsonSerializer.Serialize(definition);
         var deserialized = JsonSerializer.Deserialize<TriggerDefinition>(json);
 
-        deserialized.ShouldNotBeNull();
-        deserialized!.Id.ShouldBe("sync");
-        deserialized.Expression.ShouldBe("TZ=UTC @every 15m {stagger:3m}");
-        deserialized.Enabled.ShouldBeTrue();
-        deserialized.Metadata.ShouldNotBeNull();
-        deserialized.Metadata!["env"].ShouldBe("prod");
+        deserialized.Should().NotBeNull();
+        deserialized!.Id.Should().Be("sync");
+        deserialized.Expression.Should().Be("TZ=UTC @every 15m {stagger:3m}");
+        deserialized.Enabled.Should().BeTrue();
+        deserialized.Metadata.Should().NotBeNull();
+        deserialized.Metadata!["env"].Should().Be("prod");
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class IntegrationTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        fired.ShouldBeFalse();
+        fired.Should().BeFalse();
     }
 
     // --- TriggerContext property verification ---
@@ -117,14 +117,14 @@ public class IntegrationTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        captured.ShouldNotBeNull();
-        captured!.TriggerId.ShouldBe("ctx-test");
-        captured.FireCount.ShouldBe(1);
-        captured.Expression.ShouldNotBeNull();
-        captured.Expression.Kind.ShouldBe(ScheduleKind.Cron);
-        captured.ScheduledTime.ShouldBeGreaterThan(start);
-        captured.ActualTime.ShouldBeGreaterThanOrEqualTo(captured.ScheduledTime);
-        captured.Metadata["key"].ShouldBe("value");
+        captured.Should().NotBeNull();
+        captured!.TriggerId.Should().Be("ctx-test");
+        captured.FireCount.Should().Be(1);
+        captured.Expression.Should().NotBeNull();
+        captured.Expression.Kind.Should().Be(ScheduleKind.Cron);
+        captured.ScheduledTime.Should().BeAfter(start);
+        captured.ActualTime.Should().BeOnOrAfter(captured.ScheduledTime);
+        captured.Metadata["key"].Should().Be("value");
     }
 
     // --- Disable → Re-enable → Fire ---
@@ -145,12 +145,12 @@ public class IntegrationTests
         scheduler.SetEnabled("toggle", false);
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
-        count.ShouldBe(0);
+        count.Should().Be(0);
 
         scheduler.SetEnabled("toggle", true);
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
-        count.ShouldBe(1);
+        count.Should().Be(1);
     }
 
     // --- Multiple triggers ---
@@ -176,14 +176,14 @@ public class IntegrationTests
         // After 1 minute: a fires, b doesn't
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
-        countA.ShouldBe(1);
-        countB.ShouldBe(0);
+        countA.Should().Be(1);
+        countB.Should().Be(0);
 
         // After 5 minutes total: both fire
         tp.Advance(TimeSpan.FromMinutes(4));
         await scheduler.TickAsync();
-        countA.ShouldBe(2);
-        countB.ShouldBe(1);
+        countA.Should().Be(2);
+        countB.Should().Be(1);
     }
 
     // --- Once trigger with metadata ---
@@ -215,11 +215,11 @@ public class IntegrationTests
 
         tp.Advance(TimeSpan.FromMinutes(10));
         await scheduler.TickAsync();
-        count.ShouldBe(1);
+        count.Should().Be(1);
 
         tp.Advance(TimeSpan.FromMinutes(10));
         await scheduler.TickAsync();
-        count.ShouldBe(1); // Should not fire again
+        count.Should().Be(1); // Should not fire again
     }
 
     // --- Full expression lifecycle ---
@@ -231,37 +231,37 @@ public class IntegrationTests
 
         // Validate
         var validation = ExpressionValidator.Validate(input);
-        validation.IsValid.ShouldBeTrue();
+        validation.IsValid.Should().BeTrue();
 
         // Parse
         var expr = ChronexExpression.Parse(input);
-        expr.Kind.ShouldBe(ScheduleKind.Cron);
-        expr.Timezone.ShouldBe("UTC");
-        expr.Options.Max.ShouldBe(5);
-        expr.Options.Until.ShouldNotBeNull();
+        expr.Kind.Should().Be(ScheduleKind.Cron);
+        expr.Timezone.Should().Be("UTC");
+        expr.Options.Max.Should().Be(5);
+        expr.Options.Until.Should().NotBeNull();
 
         // ToString round-trip
         var str = expr.ToString();
         var roundTripped = ChronexExpression.Parse(str);
-        roundTripped.Timezone.ShouldBe("UTC");
-        roundTripped.Options.Max.ShouldBe(5);
+        roundTripped.Timezone.Should().Be("UTC");
+        roundTripped.Options.Max.Should().Be(5);
 
         // GetNextOccurrence
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.UtcDateTime.Hour.ShouldBe(9);
-        next.Value.UtcDateTime.DayOfWeek.ShouldNotBe(DayOfWeek.Saturday);
-        next.Value.UtcDateTime.DayOfWeek.ShouldNotBe(DayOfWeek.Sunday);
+        next.Should().NotBeNull();
+        next!.Value.UtcDateTime.Hour.Should().Be(9);
+        next.Value.UtcDateTime.DayOfWeek.Should().NotBe(DayOfWeek.Saturday);
+        next.Value.UtcDateTime.DayOfWeek.Should().NotBe(DayOfWeek.Sunday);
 
         // Enumerate
         var occurrences = expr.Enumerate(from).ToList();
-        occurrences.Count.ShouldBe(5); // max:5
+        occurrences.Count.Should().Be(5); // max:5
         foreach (var occ in occurrences)
         {
-            occ.UtcDateTime.Hour.ShouldBe(9);
-            occ.UtcDateTime.DayOfWeek.ShouldNotBe(DayOfWeek.Saturday);
-            occ.UtcDateTime.DayOfWeek.ShouldNotBe(DayOfWeek.Sunday);
+            occ.UtcDateTime.Hour.Should().Be(9);
+            occ.UtcDateTime.DayOfWeek.Should().NotBe(DayOfWeek.Saturday);
+            occ.UtcDateTime.DayOfWeek.Should().NotBe(DayOfWeek.Sunday);
         }
     }
 
@@ -287,8 +287,8 @@ public class IntegrationTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        skippedId.ShouldBe("disabled-test");
-        skippedReason.ShouldBe("disabled");
+        skippedId.Should().Be("disabled-test");
+        skippedReason.Should().Be("disabled");
     }
 
     // --- All schedule kinds fire correctly ---
@@ -310,14 +310,14 @@ public class IntegrationTests
         // At 30m: cron fires, interval fires, once fires, alias doesn't
         tp.Advance(TimeSpan.FromMinutes(30));
         await scheduler.TickAsync();
-        cronCount.ShouldBeGreaterThanOrEqualTo(1);
-        intervalCount.ShouldBe(1);
-        onceCount.ShouldBe(1);
+        cronCount.Should().BeGreaterThanOrEqualTo(1);
+        intervalCount.Should().Be(1);
+        onceCount.Should().Be(1);
 
         // At 1h: alias fires
         tp.Advance(TimeSpan.FromMinutes(30));
         await scheduler.TickAsync();
-        aliasCount.ShouldBeGreaterThanOrEqualTo(1);
+        aliasCount.Should().BeGreaterThanOrEqualTo(1);
     }
 
     // --- Error recovery: failed handler doesn't break scheduler ---
@@ -340,7 +340,7 @@ public class IntegrationTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        goodCount.ShouldBe(1); // Good trigger still fires despite bad one failing
+        goodCount.Should().Be(1); // Good trigger still fires despite bad one failing
     }
 
     // --- Expression special chars integration ---
@@ -352,15 +352,15 @@ public class IntegrationTests
         var expr = ChronexExpression.Parse("0 0 L * *");
         var from = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
-        next.ShouldNotBeNull();
-        next!.Value.DateTime.ShouldBe(new DateTime(2026, 1, 31, 0, 0, 0));
+        next.Should().NotBeNull();
+        next!.Value.DateTime.Should().Be(new DateTime(2026, 1, 31, 0, 0, 0));
 
         // Second Monday of each month at 9am
         var expr2 = ChronexExpression.Parse("0 9 * * MON#2");
         var from2 = new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero);
         var next2 = expr2.GetNextOccurrence(from2);
-        next2.ShouldNotBeNull();
+        next2.Should().NotBeNull();
         // Second Monday of March 2026 = March 9
-        next2!.Value.DateTime.ShouldBe(new DateTime(2026, 3, 9, 9, 0, 0));
+        next2!.Value.DateTime.Should().Be(new DateTime(2026, 3, 9, 9, 0, 0));
     }
 }

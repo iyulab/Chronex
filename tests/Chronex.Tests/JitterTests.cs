@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -25,7 +25,7 @@ public class JitterTests
         tp.Advance(TimeSpan.FromMinutes(1) + TimeSpan.FromSeconds(10));
         await scheduler.TickAsync();
 
-        fired.ShouldBeTrue();
+        fired.Should().BeTrue();
     }
 
     [Fact]
@@ -48,8 +48,8 @@ public class JitterTests
         tp.Advance(TimeSpan.FromMinutes(1) + TimeSpan.FromSeconds(30));
         await scheduler.TickAsync();
 
-        actualTime.ShouldNotBeNull();
-        scheduledTime.ShouldNotBeNull();
+        actualTime.Should().NotBeNull();
+        scheduledTime.Should().NotBeNull();
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class JitterTests
 
         // May or may not skip depending on random jitter value, but the mechanism should work
         // The important thing is it doesn't crash
-        (fired || skipReason != null).ShouldBeTrue();
+        (fired || skipReason != null).Should().BeTrue();
     }
 
     [Fact]
@@ -92,6 +92,6 @@ public class JitterTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        fired.ShouldBeTrue();
+        fired.Should().BeTrue();
     }
 }

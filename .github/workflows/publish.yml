@@ -16,7 +16,7 @@ jobs:
     - name: Extract version from Directory.Build.props
       id: version
       run: |
-        VERSION=$(grep -oP '<Version>\K[^<]+' Directory.Build.props)
+        VERSION=$(grep -oP '<VersionPrefix>\K[^<]+' Directory.Build.props)
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "Detected version: $VERSION"
 

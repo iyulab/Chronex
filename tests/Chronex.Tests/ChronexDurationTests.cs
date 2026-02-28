@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -16,7 +16,7 @@ public class ChronexDurationTests
     public void Parse_ValidDurations(string input, long expectedMs)
     {
         var d = ChronexDuration.Parse(input);
-        d.TotalMilliseconds.ShouldBe(expectedMs);
+        d.TotalMilliseconds.Should().Be(expectedMs);
     }
 
     [Theory]
@@ -27,7 +27,7 @@ public class ChronexDurationTests
     [InlineData("m")]
     public void TryParse_InvalidDurations_ReturnsFalse(string input)
     {
-        ChronexDuration.TryParse(input, out _).ShouldBeFalse();
+        ChronexDuration.TryParse(input, out _).Should().BeFalse();
     }
 
     [Theory]
@@ -39,7 +39,7 @@ public class ChronexDurationTests
     public void ToString_CanonicalForm(string input, string expected)
     {
         var d = ChronexDuration.Parse(input);
-        d.ToString().ShouldBe(expected);
+        d.ToString().Should().Be(expected);
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class ChronexDurationTests
     {
         var a = ChronexDuration.Parse("1h30m");
         var b = ChronexDuration.Parse("90m");
-        (a == b).ShouldBeTrue();
-        a.Equals(b).ShouldBeTrue();
+        (a == b).Should().BeTrue();
+        a.Equals(b).Should().BeTrue();
     }
 
     [Fact]
@@ -56,14 +56,14 @@ public class ChronexDurationTests
     {
         var d = ChronexDuration.Parse("2h");
         TimeSpan ts = d;
-        ts.ShouldBe(TimeSpan.FromHours(2));
+        ts.Should().Be(TimeSpan.FromHours(2));
     }
 
     [Fact]
     public void TryParse_Overflow_ReturnsFalse()
     {
         // m-3: Overflow should return false, not produce garbage
-        ChronexDuration.TryParse("999999999999999999d", out _).ShouldBeFalse();
+        ChronexDuration.TryParse("999999999999999999d", out _).Should().BeFalse();
     }
 
     [Fact]
@@ -71,9 +71,9 @@ public class ChronexDurationTests
     {
         // m-9: default struct should not have null Original
         var d = default(ChronexDuration);
-        d.Original.ShouldNotBeNull();
-        d.Original.ShouldBe(string.Empty);
-        d.Value.ShouldBe(TimeSpan.Zero);
-        d.ToString().ShouldBe("0ms");
+        d.Original.Should().NotBeNull();
+        d.Original.Should().Be(string.Empty);
+        d.Value.Should().Be(TimeSpan.Zero);
+        d.ToString().Should().Be("0ms");
     }
 }

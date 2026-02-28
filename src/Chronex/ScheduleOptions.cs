@@ -215,7 +215,7 @@ public sealed class ScheduleOptions
         {
             var u = Until.Value;
             // M-3: date-only until (23:59:59.999) → short format; otherwise full ISO 8601
-            parts.Add(u.Hour == 23 && u.Minute == 59 && u.Second == 59
+            parts.Add(u.Hour == 23 && u.Minute == 59 && u.Second == 59 && u.Millisecond == 999
                 ? $"until:{u:yyyy-MM-dd}"
                 : $"until:{u:O}");
         }

@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -22,13 +22,13 @@ public class TriggerDefinitionTests
         """;
 
         var def = JsonSerializer.Deserialize<TriggerDefinition>(json);
-        def.ShouldNotBeNull();
-        def!.Id.ShouldBe("health-check");
-        def.Expression.ShouldBe("TZ=UTC @every 15m {stagger:3m}");
-        def.Enabled.ShouldBeTrue();
-        def.Metadata.ShouldNotBeNull();
-        def.Metadata!["endpoint"].ShouldBe("https://api.example.com/health");
-        def.Metadata["env"].ShouldBe("prod");
+        def.Should().NotBeNull();
+        def!.Id.Should().Be("health-check");
+        def.Expression.Should().Be("TZ=UTC @every 15m {stagger:3m}");
+        def.Enabled.Should().BeTrue();
+        def.Metadata.Should().NotBeNull();
+        def.Metadata!["endpoint"].Should().Be("https://api.example.com/health");
+        def.Metadata["env"].Should().Be("prod");
     }
 
     [Fact]
@@ -42,10 +42,10 @@ public class TriggerDefinitionTests
         """;
 
         var def = JsonSerializer.Deserialize<TriggerDefinition>(json);
-        def.ShouldNotBeNull();
-        def!.Id.ShouldBe("test");
-        def.Enabled.ShouldBeTrue(); // default
-        def.Metadata.ShouldBeNull();
+        def.Should().NotBeNull();
+        def!.Id.Should().Be("test");
+        def.Enabled.Should().BeTrue(); // default
+        def.Metadata.Should().BeNull();
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class TriggerDefinitionTests
         """;
 
         var def = JsonSerializer.Deserialize<TriggerDefinition>(json);
-        def!.Enabled.ShouldBeFalse();
+        def!.Enabled.Should().BeFalse();
     }
 
     [Fact]
@@ -78,10 +78,10 @@ public class TriggerDefinitionTests
 
         var json = JsonSerializer.Serialize(def);
         var deserialized = JsonSerializer.Deserialize<TriggerDefinition>(json);
-        deserialized.ShouldNotBeNull();
-        deserialized!.Id.ShouldBe("my-trigger");
-        deserialized.Expression.ShouldBe("0 9 * * MON-FRI");
-        deserialized.Metadata!["scope"].ShouldBe("production");
+        deserialized.Should().NotBeNull();
+        deserialized!.Id.Should().Be("my-trigger");
+        deserialized.Expression.Should().Be("0 9 * * MON-FRI");
+        deserialized.Metadata!["scope"].Should().Be("production");
     }
 
     // Integration: Register via TriggerDefinition
@@ -112,8 +112,8 @@ public class TriggerDefinitionTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        capturedMetadata.ShouldNotBeNull();
-        capturedMetadata!["key"].ShouldBe("value");
+        capturedMetadata.Should().NotBeNull();
+        capturedMetadata!["key"].Should().Be("value");
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class TriggerDefinitionTests
         tp.Advance(TimeSpan.FromMinutes(1));
         await scheduler.TickAsync();
 
-        fired.ShouldBeFalse();
+        fired.Should().BeFalse();
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class TriggerDefinitionTests
         };
 
         var reg = scheduler.Register(def, (ctx, ct) => Task.CompletedTask);
-        reg.Metadata.ShouldNotBeNull();
-        reg.Metadata!["env"].ShouldBe("test");
+        reg.Metadata.Should().NotBeNull();
+        reg.Metadata!["env"].Should().Be("test");
     }
 }

@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -43,13 +43,13 @@ public class DstTests
         var next = expr.GetNextOccurrence(from);
 
         // 02:30 doesn't exist — should skip to next valid occurrence
-        next.ShouldNotBeNull();
+        next.Should().NotBeNull();
 
         // The result should NOT be UTC 07:30 (which would be invalid 02:30 EST)
         // It should be the next valid 02:30 (March 9th or later)
         var tz = GetEasternTz();
         var localTime = TimeZoneInfo.ConvertTime(next!.Value, tz);
-        tz.IsInvalidTime(localTime.DateTime).ShouldBeFalse(
+        tz.IsInvalidTime(localTime.DateTime).Should().BeFalse(
             $"Result {next.Value} converts to invalid local time {localTime}");
     }
 
@@ -63,10 +63,10 @@ public class DstTests
         var from = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.FromHours(-4));
         var occurrences = expr.Enumerate(from, 2).ToList();
 
-        occurrences.Count.ShouldBe(2);
+        occurrences.Count.Should().Be(2);
         // 01:30 exists twice (EDT and EST), but should fire only once per day
         var gap = occurrences[1] - occurrences[0];
-        gap.TotalHours.ShouldBeGreaterThan(23);
+        gap.TotalHours.Should().BeGreaterThan(23);
     }
 
     [Fact]
@@ -78,10 +78,10 @@ public class DstTests
         var from = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.FromHours(-4));
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
+        next.Should().NotBeNull();
         var tz = GetEasternTz();
         var local = TimeZoneInfo.ConvertTime(next!.Value, tz);
-        local.Hour.ShouldBe(12);
+        local.Hour.Should().Be(12);
     }
 
     [Fact]
@@ -94,13 +94,32 @@ public class DstTests
         var from = new DateTimeOffset(2026, 3, 8, 1, 0, 0, TimeSpan.FromHours(-5));
         var occurrences = expr.Enumerate(from, 3).ToList();
 
-        occurrences.Count.ShouldBe(3);
+        occurrences.Count.Should().Be(3);
         var tz = GetEasternTz();
         foreach (var occ in occurrences)
         {
             var local = TimeZoneInfo.ConvertTime(occ, tz);
-            tz.IsInvalidTime(local.DateTime).ShouldBeFalse(
+            tz.IsInvalidTime(local.DateTime).Should().BeFalse(
                 $"Occurrence {occ} at local {local} is in DST gap");
+        }
+    }
+
+    [Fact]
+    public void Next_FallBack_IntervalExpression_ContinuesAfterFallBack()
+    {
+        // Interval expressions may fire twice during fall-back (spec §3.5)
+        // Verify that the expression produces valid occurrences through the transition
+        var tzId = GetEasternTzId();
+        var expr = ChronexExpression.Parse($"TZ={tzId} @every 30m");
+        // From before fall-back (2026-11-01 01:00 EDT = UTC-4)
+        var from = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.FromHours(-4));
+        var occurrences = expr.Enumerate(from, 10).ToList();
+
+        occurrences.Count.Should().Be(10);
+        // All occurrences should be strictly increasing
+        for (var i = 1; i < occurrences.Count; i++)
+        {
+            occurrences[i].Should().BeAfter(occurrences[i - 1]);
         }
     }
 
@@ -113,10 +132,10 @@ public class DstTests
         var from = new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
+        next.Should().NotBeNull();
         var tz = GetEasternTz();
         var local = TimeZoneInfo.ConvertTime(next!.Value, tz);
-        local.Hour.ShouldBe(9);
-        local.DayOfWeek.ShouldBe(DayOfWeek.Monday);
+        local.Hour.Should().Be(9);
+        local.DayOfWeek.Should().Be(DayOfWeek.Monday);
     }
 }

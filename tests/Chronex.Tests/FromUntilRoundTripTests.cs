@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -15,8 +15,8 @@ public class FromUntilRoundTripTests
         var opts = ScheduleOptions.Parse("from:2025-06-01T09:00:00Z");
         var str = opts.ToString();
         var rt = ScheduleOptions.Parse(str);
-        rt.From!.Value.Hour.ShouldBe(9);
-        rt.From!.Value.Minute.ShouldBe(0);
+        rt.From!.Value.Hour.Should().Be(9);
+        rt.From!.Value.Minute.Should().Be(0);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class FromUntilRoundTripTests
         var opts = ScheduleOptions.Parse("until:2025-12-31T18:00:00+09:00");
         var str = opts.ToString();
         var rt = ScheduleOptions.Parse(str);
-        rt.Until!.Value.Hour.ShouldBe(18);
+        rt.Until!.Value.Hour.Should().Be(18);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class FromUntilRoundTripTests
         var opts = ScheduleOptions.Parse("from:2025-06-01");
         var str = opts.ToString();
         // Should be "from:2025-06-01" without ISO datetime suffix
-        str.ShouldBe("from:2025-06-01");
+        str.Should().Be("from:2025-06-01");
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class FromUntilRoundTripTests
         var opts = ScheduleOptions.Parse("until:2025-12-31");
         var str = opts.ToString();
         // Should be "until:2025-12-31" without ISO datetime suffix
-        str.ShouldBe("until:2025-12-31");
+        str.Should().Be("until:2025-12-31");
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class FromUntilRoundTripTests
         var expr = ChronexExpression.Parse("0 9 * * * {from:2025-06-01T09:00:00Z}");
         var str = expr.ToString();
         var rt = ChronexExpression.Parse(str);
-        rt.Options.From!.Value.Hour.ShouldBe(9);
+        rt.Options.From!.Value.Hour.Should().Be(9);
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public class FromUntilRoundTripTests
         var next = expr.GetNextOccurrence(from);
 
         // First fire should be at From + 1h = 10:00:00, not 09:59:59
-        next.ShouldNotBeNull();
-        next!.Value.ShouldBe(new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero));
+        next.Should().NotBeNull();
+        next!.Value.Should().Be(new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class FromUntilRoundTripTests
         var from = new DateTimeOffset(2025, 5, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldBeNull();
+        next.Should().BeNull();
     }
 
     [Fact]
@@ -87,8 +87,8 @@ public class FromUntilRoundTripTests
         var from = new DateTimeOffset(2025, 12, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
-        next!.Value.ShouldBeGreaterThanOrEqualTo(
+        next.Should().NotBeNull();
+        next!.Value.Should().BeOnOrAfter(
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
     }
 
@@ -100,7 +100,7 @@ public class FromUntilRoundTripTests
         var from = new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
         var next = expr.GetNextOccurrence(from);
 
-        next.ShouldNotBeNull();
-        next!.Value.ShouldBe(new DateTimeOffset(2026, 6, 15, 10, 0, 0, TimeSpan.Zero));
+        next.Should().NotBeNull();
+        next!.Value.Should().Be(new DateTimeOffset(2026, 6, 15, 10, 0, 0, TimeSpan.Zero));
     }
 }

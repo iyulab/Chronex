@@ -44,7 +44,7 @@ internal sealed class ChronexBackgroundService : BackgroundService
                 var handlerType = desc.HandlerType;
                 handler = async (ctx, ct) =>
                 {
-                    using var scope = _serviceProvider.CreateScope();
+                    await using var scope = _serviceProvider.CreateAsyncScope();
                     var h = (IChronexHandler)scope.ServiceProvider.GetRequiredService(handlerType);
                     await h.HandleAsync(ctx, ct);
                 };

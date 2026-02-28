@@ -37,4 +37,22 @@ public sealed class TriggerContext
         Expression = expression;
         Metadata = metadata ?? EmptyMetadata;
     }
+
+    /// <summary>
+    /// Creates a <see cref="TriggerContext"/> for unit testing handler implementations.
+    /// </summary>
+    /// <param name="triggerId">The trigger identifier.</param>
+    /// <param name="fireCount">The fire count (1-based). Defaults to 1.</param>
+    /// <param name="scheduledTime">The scheduled time. Defaults to <see cref="DateTimeOffset.UtcNow"/>.</param>
+    /// <param name="metadata">Optional metadata dictionary.</param>
+    public static TriggerContext ForTest(
+        string triggerId,
+        int fireCount = 1,
+        DateTimeOffset? scheduledTime = null,
+        IReadOnlyDictionary<string, string>? metadata = null)
+    {
+        var now = scheduledTime ?? DateTimeOffset.UtcNow;
+        var expr = ChronexExpression.Parse("@every 1m");
+        return new TriggerContext(triggerId, now, now, fireCount, expr, metadata);
+    }
 }

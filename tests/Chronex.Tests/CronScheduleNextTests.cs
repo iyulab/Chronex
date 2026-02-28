@@ -1,4 +1,4 @@
-using Shouldly;
+using FluentAssertions;
 using Xunit;
 
 namespace Chronex.Tests;
@@ -17,7 +17,7 @@ public class CronScheduleNextTests
         var sched = Parse("* * * * *");
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 0, 1, 0));
+        next.Should().Be(new DateTime(2026, 1, 1, 0, 1, 0));
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public class CronScheduleNextTests
         var sched = Parse("*/5 * * * *");
         var from = new DateTime(2026, 1, 1, 0, 3, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 0, 5, 0));
+        next.Should().Be(new DateTime(2026, 1, 1, 0, 5, 0));
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class CronScheduleNextTests
         var from = new DateTime(2026, 1, 1, 10, 0, 0);
         var next = sched.Next(from);
         // Next occurrence is tomorrow at 09:30
-        next.ShouldBe(new DateTime(2026, 1, 2, 9, 30, 0));
+        next.Should().Be(new DateTime(2026, 1, 2, 9, 30, 0));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class CronScheduleNextTests
         var sched = Parse("30 9 * * *");
         var from = new DateTime(2026, 1, 1, 8, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 9, 30, 0));
+        next.Should().Be(new DateTime(2026, 1, 1, 9, 30, 0));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class CronScheduleNextTests
         var from = new DateTime(2026, 1, 3, 0, 0, 0);
         var next = sched.Next(from);
         // Monday 2026-01-05
-        next.ShouldBe(new DateTime(2026, 1, 5, 9, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 5, 9, 0, 0));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class CronScheduleNextTests
         var sched = Parse("0 0 1 * *");
         var from = new DateTime(2026, 1, 15, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 2, 1, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 2, 1, 0, 0, 0));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class CronScheduleNextTests
         var sched = Parse("0 0 1 1 *");
         var from = new DateTime(2026, 3, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2027, 1, 1, 0, 0, 0));
+        next.Should().Be(new DateTime(2027, 1, 1, 0, 0, 0));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class CronScheduleNextTests
         var sched = Parse("30 * * * * *");
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 0, 0, 30));
+        next.Should().Be(new DateTime(2026, 1, 1, 0, 0, 30));
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class CronScheduleNextTests
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
         // Should not return `from` itself
-        next.ShouldBe(new DateTime(2026, 1, 1, 0, 1, 0));
+        next.Should().Be(new DateTime(2026, 1, 1, 0, 1, 0));
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public class CronScheduleNextTests
         var sched = Parse("0 0 15 * *");
         var from = new DateTime(2026, 1, 20, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 2, 15, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 2, 15, 0, 0, 0));
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class CronScheduleNextTests
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var next = sched.Next(from);
         // Next Feb 29 is 2028
-        next.ShouldBe(new DateTime(2028, 2, 29, 0, 0, 0));
+        next.Should().Be(new DateTime(2028, 2, 29, 0, 0, 0));
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public class CronScheduleNextTests
         var sched = CronSchedule.Parse(["0", "0", "L", "*", "*"]);
         var from = new DateTime(2026, 1, 15, 0, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 31, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 31, 0, 0, 0));
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class CronScheduleNextTests
         var sched = CronSchedule.Parse(["0", "0", "L", "*", "*"]);
         var from = new DateTime(2026, 1, 31, 1, 0, 0); // After midnight on Jan 31
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 2, 28, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 2, 28, 0, 0, 0));
     }
 
     [Fact]
@@ -139,11 +139,11 @@ public class CronScheduleNextTests
         var sched = Parse("0 9 * * *");
         var from = new DateTime(2026, 1, 1, 0, 0, 0);
         var t1 = sched.Next(from);
-        t1.ShouldBe(new DateTime(2026, 1, 1, 9, 0, 0));
+        t1.Should().Be(new DateTime(2026, 1, 1, 9, 0, 0));
         var t2 = sched.Next(t1!.Value);
-        t2.ShouldBe(new DateTime(2026, 1, 2, 9, 0, 0));
+        t2.Should().Be(new DateTime(2026, 1, 2, 9, 0, 0));
         var t3 = sched.Next(t2!.Value);
-        t3.ShouldBe(new DateTime(2026, 1, 3, 9, 0, 0));
+        t3.Should().Be(new DateTime(2026, 1, 3, 9, 0, 0));
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class CronScheduleNextTests
         var sched = Parse("45 * * * *");
         var from = new DateTime(2026, 1, 1, 0, 50, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 1, 45, 0));
+        next.Should().Be(new DateTime(2026, 1, 1, 1, 45, 0));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class CronScheduleNextTests
         var from = new DateTime(2026, 3, 1, 0, 0, 0);
         var next = sched.Next(from);
         // 2nd Monday of March 2026 = 9th
-        next.ShouldBe(new DateTime(2026, 3, 9, 0, 0, 0));
+        next.Should().Be(new DateTime(2026, 3, 9, 0, 0, 0));
     }
 
     [Fact]
@@ -172,6 +172,6 @@ public class CronScheduleNextTests
         var sched = Parse("0 22-2 * * *");
         var from = new DateTime(2026, 1, 1, 20, 0, 0);
         var next = sched.Next(from);
-        next.ShouldBe(new DateTime(2026, 1, 1, 22, 0, 0));
+        next.Should().Be(new DateTime(2026, 1, 1, 22, 0, 0));
     }
 }
